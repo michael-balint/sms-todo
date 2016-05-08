@@ -1,0 +1,16 @@
+{
+  "name": "respond",
+  "version": "0.0.0",
+  "description": "",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Michael Balint",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.0.0-rc.4",
+    "lodash": "^4.11.2",
+    "plivo": "^0.3.3"
+  }
+}
