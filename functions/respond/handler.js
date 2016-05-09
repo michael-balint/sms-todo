@@ -97,14 +97,14 @@ const handleMessage = (inputText, userData, callback) => {
   // 4) change settings (settings)
   // 5) edit task (Edit N)
   
-  if (parsedInputText.search(/Remind me /gi) >= 0) {
+  if (parsedInputText.search(/Remind me /gi) >= 0) { // condition for lowercase 'remind'
     parsedInputText.replace(/Remind me /gi, "");
     // TODO: add NLP to parse out the todo text
     // save it to the DB (subject, qty, date/time, importance)
     // may have to ask the user for additional information if not provided
     // will require a nested check to remember the Reminder task
     // reference it to the cron job
-  } else if (parsedInputText.search(/Edit /gi) >= 0) {
+  } else if (parsedInputText.search(/Edit /gi) >= 0) { // condition for lowercase 'edit'
     let todoNumber = Number(parsedInputText.replace(/Edit /gi, ""));
     // TODO: get list of all todoNumbers associated with user
     if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists 
@@ -113,6 +113,29 @@ const handleMessage = (inputText, userData, callback) => {
     } else {
       return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
     }
+  } else if (parsedInputText.search(/Name /gi) >= 0) { // condition for lowercase 'name', does this conflict with 'setting' command
+    userData.Name = toTitleCase(parsedInputText.replace(/Name /gi, ""));
+    storeUserData(userData, (err, data) => {
+      // TODO: handle error
+      return callback(null, "Great! Your name has been updated.");
+    });
+  } else if (parsedInputText.search(/Time Zone /gi) >= 0) { // condition for lowercase 'time zone', does this conflict with 'setting' command
+    userData.TimeZone = parsedInputText.replace(/Time Zone /gi, "").toUpperCase();
+    if (userData.TimeZone != 'ET' || userData.TimeZone != 'CT' || userData.TimeZone != 'MT' || userData.TimeZone != 'PT') {
+      return callback(null, 'Please use one of the four available timezones (ET, CT, MT, or PT) and try again.');
+    } else {
+      storeUserData(userData, (err, data) => {
+        // TODO: handle error
+        return callback(null, "Amazing! Your time zone has been updated.");
+      });
+    }
+  } else if (parsedInputText.search(/Daily Reminder Time /gi) >= 0) { // condition for lowercase 'daily reminder time', does this conflict with 'setting' command
+    UserData.DailyReminderTime = parsedInputText.replace(/Daily Reminder Time /gi, "");
+    // TODO: use NLP to parse out the setting and new value, throw exception if unable to parse into machine readable time
+    storeUserData(userData, (err, data) => {
+      // TODO: handle error
+      return callback(null, "Fabulous! Your daily reminder time has been updated.");
+    });
   } else {
     switch(parsedInputText.toLowerCase()) {
       case 'help':
@@ -122,8 +145,7 @@ const handleMessage = (inputText, userData, callback) => {
         // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
         break;
       case 'settings':
-        // TODO: list the settings and provide an option to edit them
-        // potentially requires a nested check to remember the Settings task
+        return callback(null, "Your settings are:\nName: ${userData.Name}\nTime Zone: ${userData.TimeZone}\nDaily Reminder Time: ${userData.DailyReminderTime}\nTo make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT).")
         break;
       default:
         return callback(null, "Kato can't help with that or is to dumb to figure it out right now, try typing 'help' to get a list of available options!");
@@ -171,12 +193,12 @@ const initialSetup = (inputText, userData, callback) => {
     userData.Name = toTitleCase(parsedInputText);
     storeUserData(userData, (err, data) => {
       // TODO: handle error
-      return callback(null, `Hello ${userData.Name}! What timezone are you in (e.g. ET, CT, MT, or PT)?`);
+      return callback(null, `Hello ${userData.Name}! What timezone are you in (ET, CT, MT, or PT)?`);
     });
   } else if (!userData.TimeZone) {
     userData.TimeZone = parsedInputText.toUpperCase();
     if (userData.TimeZone != 'ET' || userData.TimeZone != 'CT' || userData.TimeZone != 'MT' || userData.TimeZone != 'PT') {
-      return callback(null, 'Please reply with one of the four available timezones (e.g. ET, CT, MT, or PT).');
+      return callback(null, 'Please reply with one of the four available timezones (ET, CT, MT, or PT).');
     } else {
       storeUserData(userData, (err, data) => {
         // TODO: handle error
@@ -186,6 +208,7 @@ const initialSetup = (inputText, userData, callback) => {
   } else if (!userData.DailyReminderTime) {
     if (parsedInputText != 'next') {
       // TODO: add in NLP to parse ReminderTime and convert it to a machine readable format
+      // throw error if not an acceptable response
       userData.DailyReminderTime = parsedInputText;
     else {
       userData.DailyReminderTime = "08:00"; // default reminder time, machine readable format
