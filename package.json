@@ -9,5 +9,7 @@
     "type": "git",
     "url": "git://github.com/"
   },
-  "dependencies": {}
+  "dependencies": {
+    "serverless-meta-sync": "^0.1.0"
+  }
 }
