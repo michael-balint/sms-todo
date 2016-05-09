@@ -10,6 +10,7 @@
     "url": "git://github.com/"
   },
   "dependencies": {
-    "serverless-meta-sync": "^0.1.0"
+    "serverless-meta-sync": "^0.1.0",
+    "serverless-offline": "^2.3.2"
   }
 }
