@@ -103,7 +103,7 @@ const handleMessage = (inputText, userData, callback) => {
     // may have to ask the user for additional information if not provided
     // will require a nested check to remember the Reminder task
     // reference it to the cron job
-  } else if (parsedInputText(/Edit /gi) >= 0) {
+  } else if (parsedInputText.search(/Edit /gi) >= 0) {
     let todoNumber = Number(parsedInputText.replace(/Edit /gi, ""));
     // TODO: get list of all todoNumbers associated with user
     if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists 
