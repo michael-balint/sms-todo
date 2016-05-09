@@ -30,10 +30,12 @@ module.exports.handler = (event, context, callback) => {
       return getUserData(userParams, next);
     },
     (userData, next) => {
-      if (userData.NewUser == true) {
-        return initialSetup(inputText, userData, next);
-      } else {
-        return handleMessage(inputText, userData, next);
+      if( !userData.Name ) {
+        if (userData.NewUser == true) {
+          return initialSetup(inputText, userData, next);
+        } else {
+          return handleMessage(inputText, userData, next);
+        }
       }
     },
     (messageText, next) => {
@@ -58,15 +60,18 @@ const getUserData = (params, callback) => {
       "Phone": params.phone
     }
   }, (err, data) => {
-    if (err) { return callback(err); }
-    let userData = _.defaults(data, {
-      "Phone": params.phone,
-      "Name": params.name,
-      "TimeZone": params.time_zone,
-      "DailyReminderTime": params.daily_reminder_time,
-      "NewUser": params.new_user,
-      "Todos": {} // TODO: retrieve all todos
-    });
+    if (err) { 
+      return callback(err); 
+    } else {
+      let userData = _.defaults(data, {
+        "Phone": params.phone,
+        "Name": params.name,
+        "TimeZone": params.time_zone,
+        "DailyReminderTime": params.daily_reminder_time,
+        "NewUser": params.new_user,
+        "Todos": {} // TODO: retrieve all todos
+      });
+    }
 
     return callback(null, userData);
   });
