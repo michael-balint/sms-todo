@@ -62,9 +62,9 @@ const getUserData = (params, callback) => {
       "Phone": params.phone,
       "Name": params.name,
       "TimeZone": params.time_zone,
-      "ReminderTime": params.reminder_time,
+      "DailyReminderTime": params.daily_reminder_time,
       "NewUser": params.new_user,
-      "Todos": {}
+      "Todos": {} // TODO: retrieve all todos
     });
 
     return callback(null, userData);
@@ -90,11 +90,44 @@ const handleMessage = (inputText, userData, callback) => {
   let parsedInputText = inputText.replace(/\+/g, " ");
   
   // TODO: add in various conditions
-  // 1) new task
-  // 2) list tasks
-  // 3) help request
-  // 4) change settings
-  // 5) edit task
+  // 1) new task (Remind me ...)
+  // 2) list tasks (list)
+  // 3) help request (help)
+  // 4) change settings (settings)
+  // 5) edit task (Edit N)
+  
+  if (parsedInputText.search(/Remind me /gi) >= 0) {
+    parsedInputText.replace(/Remind me /gi, "");
+    // TODO: add NLP to parse out the todo text
+    // save it to the DB (subject, qty, date/time, importance)
+    // may have to ask the user for additional information if not provided
+    // will require a nested check to remember the Reminder task
+    // reference it to the cron job
+  } else if (parsedInputText.search(/Edit /gi) >= 0) {
+    let todoNumber = Number(parsedInputText.replace(/Edit /gi, ""));
+    // TODO: get list of all todoNumbers associated with user
+    if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists 
+      // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
+      // requires a nested check to remember the Edit task
+    } else {
+      return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
+    }
+  } else {
+    switch(parsedInputText.toLowerCase()) {
+      case 'help':
+        return callback(null, "1) To create a new todo, start a text message with 'Remind me'\n2) To get the list of all your todos, text 'list'\n3) To edit a todo, text 'Edit N' (where N is an existing todo number)\n4) to view your settings type 'settings'");
+        break;
+      case 'list':
+        // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
+        break;
+      case 'settings':
+        // TODO: list the settings and provide an option to edit them
+        // potentially requires a nested check to remember the Settings task
+        break;
+      default:
+        return callback(null, "Kato can't help with that or is to dumb to figure it out right now, try typing 'help' to get a list of available options!");
+    }
+  }
 
 };
 
@@ -149,12 +182,12 @@ const initialSetup = (inputText, userData, callback) => {
         return callback(null, "Awesome! We send out daily reminders of your top 3 todos (plus more) at 8AM. If you'd like to be reminded at a different time, please reply with the new time (if you don't want to change the daily reminder time reply 'next')?");
       });
     }
-  } else if (!userData.ReminderTime) {
+  } else if (!userData.DailyReminderTime) {
     if (parsedInputText != 'next') {
       // TODO: add in NLP to parse ReminderTime and convert it to a machine readable format
-      userData.ReminderTime = parsedInputText;
+      userData.DailyReminderTime = parsedInputText;
     else {
-      userData.ReminderTime = "08:00"; // default reminder time, machine readable format
+      userData.DailyReminderTime = "08:00"; // default reminder time, machine readable format
     }
     userData.NewUser == false;
     storeUserData(userData, (err, data) => {
