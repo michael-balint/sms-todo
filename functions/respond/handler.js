@@ -38,7 +38,7 @@ module.exports.handler = (event, context, callback) => {
         'dst': userPhone,
         'text': messageText
       };
-      return sendResponse(messageParams, next);
+      return sendMessage(messageParams, next);
     }
   ], (err, response) => {
     return callback(err, response);
@@ -57,6 +57,9 @@ const getUserData = (params, callback) => {
     if (err) { return callback(err); }
     let userData = _.defaults(data, {
       "Phone": params.phone,
+      "Name": params.name,
+      "TimeZone": params.time_zone,
+      "ReminderTime": params.reminder_time,
       "Todos": {}
     });
 
@@ -77,6 +80,7 @@ const storeUserData = (userData, callback) => {
 
 };
 
+// should be refactored to handle general commands post setup
 const handleMessage = (inputText, userData, callback) => {
 
   let parsedInputText = inputText.replace(/\+/g, " ");
@@ -102,7 +106,7 @@ const handleMessage = (inputText, userData, callback) => {
 
 };
 
-const sendResponse = (params, callback) => {
+const sendMessage = (params, callback) => {
 
   plivo.send_message(params, (status, response) => {
     // TODO: handle status + errors
