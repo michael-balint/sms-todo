@@ -14,6 +14,13 @@ let db = new AWS.DynamoDB.DocumentClient();
 
 module.exports.handler = (event, context, callback) => {
 
+  // let messageParams = {
+  //   'src': event.To,
+  //   'dst': event.From,
+  //   'text': "lolcat"
+  // };
+  // return sendMessage(messageParams, callback);
+
   if (event.To !== config.PHONE) {
     console.log(event, config);
     return callback(new Error("Invalid input."));
