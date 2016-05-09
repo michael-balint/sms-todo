@@ -89,14 +89,14 @@ const storeUserData = (userData, callback) => {
 const handleMessage = (inputText, userData, callback) => {
 
   let parsedInputText = inputText.replace(/\+/g, " ");
-  
+
   // TODO: add in various conditions
   // 1) new task (Remind me ...)
   // 2) list tasks (list)
   // 3) help request (help)
   // 4) change settings (settings)
   // 5) edit task (Edit N)
-  
+
   if (parsedInputText.search(/Remind me /gi) >= 0) { // condition for lowercase 'remind'
     parsedInputText.replace(/Remind me /gi, "");
     // TODO: add NLP to parse out the todo text
@@ -107,7 +107,7 @@ const handleMessage = (inputText, userData, callback) => {
   } else if (parsedInputText.search(/Edit /gi) >= 0) { // condition for lowercase 'edit'
     let todoNumber = Number(parsedInputText.replace(/Edit /gi, ""));
     // TODO: get list of all todoNumbers associated with user
-    if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists 
+    if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
       // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
       // requires a nested check to remember the Edit task
     } else {
@@ -166,14 +166,14 @@ const sendMessage = (params, callback) => {
 // invitation to new user, currently has to be a server call
 // TODO: create simple dashboard to invite new users and track existing user's usage
 const invitation = (userPhone, callback) => {
-  
+
   // create new user in DB
   userData = {
     'Phone': userPhone,
     'newUser': true
   };
   storeUserData(userData, callback);
-  
+
   // send initial welcome email
   let params = {
     'src': config.PHONE, // not sure what this is, related to config.json and believe it's a plivo setting
@@ -181,12 +181,12 @@ const invitation = (userPhone, callback) => {
     'text': "Hello! Welcome to the Kato private beta. We're going to ask a few quick questions to get you setup. What's your name?"
   };
   sendResponse(params, callback);
-  
+
 };
 
 // initial setup for new user
 const initialSetup = (inputText, userData, callback) => {
-  
+
   let parsedInputText = inputText.replace(/\+/g, " ");
 
   if (!userData.Name) {
