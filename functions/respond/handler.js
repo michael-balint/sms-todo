@@ -27,15 +27,13 @@ module.exports.handler = (event, context, callback) => {
       let userParams = {
         phone: userPhone
       };
-      return getUserData(userParams, next);
+      return getOrCreateUserData(userParams, next);
     },
-    (userData, next) => {
-      if( !userData.Name ) {
-        if (userData.NewUser == true) {
-          return initialSetup(inputText, userData, next);
-        } else {
-          return handleMessage(inputText, userData, next);
-        }
+    (UserData, next) => {
+      if (UserData.NewUser == true) {
+        return initialSetup(inputText, UserData, next);
+      } else {
+        return handleMessage(inputText, UserData, next);
       }
     },
     (messageText, next) => {
@@ -52,7 +50,7 @@ module.exports.handler = (event, context, callback) => {
 
 };
 
-const getUserData = (params, callback) => {
+const getOrCreateUserData = (params, callback) => {
 
   db.get({
     "TableName": config.DB_TABLE_NAME,
@@ -63,17 +61,15 @@ const getUserData = (params, callback) => {
     if (err) { 
       return callback(err); 
     } else {
-      let userData = _.defaults(data, {
-        "Phone": params.phone,
-        "Name": params.name,
-        "TimeZone": params.time_zone,
-        "DailyReminderTime": params.daily_reminder_time,
-        "NewUser": params.new_user,
-        "Todos": {} // TODO: retrieve all todos
-      });
+      if (!data.Phone) { // if user doesn't exist in DB
+        data.Phone = params.phone;
+        data.NewUser = true;
+        data.Todos = {};
+        storeUserData(data, callback);
+      }
     }
 
-    return callback(null, userData);
+    return callback(null, data);
   });
 
 };
@@ -84,7 +80,6 @@ const storeUserData = (userData, callback) => {
     "TableName": config.DB_TABLE_NAME,
     "Item": userData
   }, (err, data) => {
-
     return callback(err, data);
   });
 
@@ -165,27 +160,6 @@ const sendMessage = (params, callback) => {
     // TODO: handle status + errors
     callback(null, response);
   });
-
-};
-
-// invitation to new user, currently has to be a server call
-// TODO: create simple dashboard to invite new users and track existing user's usage
-const invitation = (userPhone, callback) => {
-
-  // create new user in DB
-  userData = {
-    'Phone': userPhone,
-    'newUser': true
-  };
-  storeUserData(userData, callback);
-
-  // send initial welcome email
-  let params = {
-    'src': config.PHONE, // not sure what this is, related to config.json and believe it's a plivo setting
-    'dst': userPhone,
-    'text': "Hello! Welcome to the Kato private beta. We're going to ask a few quick questions to get you setup. What's your name?"
-  };
-  sendResponse(params, callback);
 
 };
 
