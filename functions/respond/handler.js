@@ -30,7 +30,11 @@ module.exports.handler = (event, context, callback) => {
       return getUserData(userParams, next);
     },
     (userData, next) => {
-      return handleMessage(inputText, userData, next);
+      if (userData.NewUser == true) {
+        return initialSetup(inputText, userData, next);
+      } else {
+        return handleMessage(inputText, userData, next);
+      }
     },
     (messageText, next) => {
       let messageParams = {
@@ -60,6 +64,7 @@ const getUserData = (params, callback) => {
       "Name": params.name,
       "TimeZone": params.time_zone,
       "ReminderTime": params.reminder_time,
+      "NewUser": params.new_user,
       "Todos": {}
     });
 
@@ -84,25 +89,13 @@ const storeUserData = (userData, callback) => {
 const handleMessage = (inputText, userData, callback) => {
 
   let parsedInputText = inputText.replace(/\+/g, " ");
-
-  if (!userData.Name) {
-    if (parsedInputText.search(/my name is /gi) >= 0) {
-      userData.Name = parsedInputText.replace(/my name is /gi, "");
-      storeUserData(userData, (err, data) => {
-        // TODO: handle error
-        return callback(null, `Hello ${userData.Name}!`);
-      });
-    } else {
-      let message = "Let's get you set up! What is your name? Respond with \"My name is <name>\"";
-      return callback(null, message);
-    }
-  } else {
-    if (parsedInputText.search(/help/gi) >= 0) {
-      return callback(null, "help");
-    } else {
-      return callback(null, "punt");
-    }
-  }
+  
+  // TODO: add in various conditions
+  // 1) new task
+  // 2) list tasks
+  // 3) help request
+  // 4) change settings
+  // 5) edit task
 
 };
 
@@ -114,3 +107,65 @@ const sendMessage = (params, callback) => {
   });
 
 };
+
+// invitation to new user, currently has to be a server call
+// TODO: create simple dashboard to invite new users and track existing user's usage
+const invitation = (userPhone, callback) => {
+  
+  // create new user in DB
+  userData = {
+    'Phone': userPhone,
+    'newUser': true
+  };
+  storeUserData(userData, callback);
+  
+  // send initial welcome email
+  let params = {
+    'src': config.PHONE, // not sure what this is, related to config.json and believe it's a plivo setting
+    'dst': userPhone,
+    'text': "Hello! Welcome to the Kato private beta. We're going to ask a few quick questions to get you setup. What's your name?"
+  };
+  sendResponse(params, callback);
+  
+};
+
+// initial setup for new user
+const initialSetup = (inputText, userData, callback) => {
+  
+  let parsedInputText = inputText.replace(/\+/g, " ");
+
+  if (!userData.Name) {
+    userData.Name = toTitleCase(parsedInputText);
+    storeUserData(userData, (err, data) => {
+      // TODO: handle error
+      return callback(null, `Hello ${userData.Name}! What timezone are you in (e.g. ET, CT, MT, or PT)?`);
+    });
+  } else if (!userData.TimeZone) {
+    userData.TimeZone = parsedInputText.toUpperCase();
+    if (userData.TimeZone != 'ET' || userData.TimeZone != 'CT' || userData.TimeZone != 'MT' || userData.TimeZone != 'PT') {
+      return callback(null, 'Please reply with one of the four available timezones (e.g. ET, CT, MT, or PT).');
+    } else {
+      storeUserData(userData, (err, data) => {
+        // TODO: handle error
+        return callback(null, "Awesome! We send out daily reminders of your top 3 todos (plus more) at 8AM. If you'd like to be reminded at a different time, please reply with the new time (if you don't want to change the daily reminder time reply 'next')?");
+      });
+    }
+  } else if (!userData.ReminderTime) {
+    if (parsedInputText != 'next') {
+      // TODO: add in NLP to parse ReminderTime and convert it to a machine readable format
+      userData.ReminderTime = parsedInputText;
+    else {
+      userData.ReminderTime = "08:00"; // default reminder time, machine readable format
+    }
+    userData.NewUser == false;
+    storeUserData(userData, (err, data) => {
+      // TODO: handle error
+      let message = "Great, you're all set! Kato is here to help you easily remember all your daily tasks without having to use some app. We recommend you save this number for future use. Type 'help' to get a list of commands to get started."; // insert tutorial text here
+      return callback(null, message);
+    });
+  }
+};
+
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+}
