@@ -150,7 +150,7 @@ const handleMessage = (inputText, userData, callback) => {
         return callback(null, "Your settings are:\nName: ${userData.Name}\nTime Zone: ${userData.TimeZone}\nDaily Reminder Time: ${userData.DailyReminderTime}\nTo make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT).")
         break;
       default:
-        return callback(null, "Kato can't help with that or is to dumb to figure it out right now, try typing 'help' to get a list of available options!");
+        return callback(null, "Woodhouse is still pretty dumb, try typing 'help' to get a list of available options!");
     }
   }
 
