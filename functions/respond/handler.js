@@ -60,18 +60,18 @@ const getOrCreateUserData = (params, callback) => {
       "Phone": params.phone
     }
   }, (err, data) => {
-    if (err) { 
-      return callback(err); 
+    if (err) {
+      return callback(err);
     } else {
       if (!data.Phone) { // if user doesn't exist in DB
         data.Phone = params.phone;
         data.NewUser = true;
         data.Todos = {};
-        storeUserData(data, callback);
+        return storeUserData(data, callback);
+      } else {
+        return callback(null, data);
       }
     }
-
-    return callback(null, data);
   });
 
 };
