@@ -97,7 +97,7 @@ const initializeUserData = (userData, callback) => {
     if (err) {
       console.error("Error initializing DB item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
-      console.log("DB item initialized successfully (dynamoDB bug, no data output, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
+      console.log("DB item initialized successfully (dynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
       let params = {
         "phone": userData.Phone
       };
@@ -106,6 +106,18 @@ const initializeUserData = (userData, callback) => {
   });
 
 };
+
+const updateUserData = (params, message, callback) => {
+  console.log(message);
+  db.update(params, (err, data) => {
+    if (err) {
+      console.error("Error updating DB item. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+      console.log("DB item updated successfully:", JSON.stringify(data, null, 2));
+      return callback(null, message);
+    }
+  });
+}
 
 // should be refactored to handle general commands post setup
 const handleMessage = (inputText, userData, callback) => {
@@ -188,38 +200,41 @@ const sendMessage = (params, callback) => {
 // initial setup for new user
 const initialSetup = (inputText, userData, callback) => {
 
-  let parsedInputText = inputText.replace(/\+/g, " ");
+  let parsedInputText = inputText.replace(/\+/g, " "); // may not be needed
 
-  if (!userData.Name) {
-    userData.Name = toTitleCase(parsedInputText);
-    storeUserData(userData, (err, data) => {
-      // TODO: handle error
-      return callback(null, `Hello ${userData.Name}! What timezone are you in (ET, CT, MT, or PT)?`);
-    });
-  } else if (!userData.TimeZone) {
-    userData.TimeZone = parsedInputText.toUpperCase();
-    if (userData.TimeZone != 'ET' || userData.TimeZone != 'CT' || userData.TimeZone != 'MT' || userData.TimeZone != 'PT') {
+  let params = {
+    "TableName": config.DB_TABLE_NAME,
+    "Key": {
+      "Phone": userData.Phone
+    },
+    // UpdateExpression: "set Name=:name",
+    // ExpressionAttributeValues: {
+    //   ":ame":userData.name,
+    // },
+    ReturnValues:"UPDATED_NEW"
+  };
+
+  if (!userData.UserTimeZone) {
+    let tz = parsedInputText.toUpperCase();
+    if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
       return callback(null, 'Please reply with one of the four available timezones (ET, CT, MT, or PT).');
     } else {
-      storeUserData(userData, (err, data) => {
-        // TODO: handle error
-        return callback(null, "Awesome! We send out daily reminders of your top 3 todos (plus more) at 8AM. If you'd like to be reminded at a different time, please reply with the new time (if you don't want to change the daily reminder time reply 'next')?");
-      });
+      params.UpdateExpression = "set UserTimeZone=:tz";
+      params.ExpressionAttributeValues = {":tz": tz};
+      let message = "Awesome! We send out daily reminders of your top 3 todos (plus more) at 0800. If you'd like to be reminded at a different time, please reply with the new time in military time (if you don't want to change the daily reminder time reply 'next')?";
+      updateUserData(params, message, callback);
     }
   } else if (!userData.DailyReminderTime) {
-    if (parsedInputText != 'next') {
-      // TODO: add in NLP to parse ReminderTime and convert it to a machine readable format
-      // throw error if not an acceptable response
-      userData.DailyReminderTime = parsedInputText;
+    if (parsedInputText != 'next' && parsedInputText != 'Next') {
+      // TODO: add NLP to chnage the time to machine readable format
+      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
+      params.ExpressionAttributeValues = {":drt": parsedInputText, ":nu": false}; // default reminder time, machine readable format
     } else {
-      userData.DailyReminderTime = "08:00"; // default reminder time, machine readable format
+      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
+      params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false}; // default reminder time, machine readable format
     }
-    userData.NewUser == false;
-    storeUserData(userData, (err, data) => {
-      // TODO: handle error
-      let message = "Great, you're all set! Kato is here to help you easily remember all your daily tasks without having to use some app. We recommend you save this number for future use. Type 'help' to get a list of commands to get started."; // insert tutorial text here
-      return callback(null, message);
-    });
+    let message = "Great, you're all set! Woodhouse is here to help you remember your daily tasks. We recommend you save this number. Type 'help' to get a list of commands to create your first todo!"; // insert tutorial text here
+    updateUserData(params, message, callback);
   }
 };
 
