@@ -21,7 +21,7 @@ module.exports.handler = (event, context, callback) => {
     return callback(new Error("Invalid input."));
   }
 
-  let userPhone = event.From;
+  let userPhone = event.From.toString();
   let inputText = event.Text;
 
   async.waterfall([
