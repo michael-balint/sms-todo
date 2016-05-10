@@ -3,7 +3,9 @@
 const _ = require('lodash');
 const async = require('async');
 const Plivo = require('plivo');
+
 const AWS = require('aws-sdk');
+AWS.config.update({region:'us-east-1'});
 
 const config = require('./config.json');
 const plivoCreds = require('./plivo-creds.json');
