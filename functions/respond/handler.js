@@ -14,13 +14,6 @@ let db = new AWS.DynamoDB.DocumentClient();
 
 module.exports.handler = (event, context, callback) => {
 
-  // let messageParams = {
-  //   'src': event.To,
-  //   'dst': event.From,
-  //   'text': "lolcat"
-  // };
-  // return sendMessage(messageParams, callback);
-
   if (event.To !== config.PHONE) {
     console.log(event, config);
     return callback(new Error("Invalid input."));
@@ -196,7 +189,7 @@ const initialSetup = (inputText, userData, callback) => {
       // TODO: add in NLP to parse ReminderTime and convert it to a machine readable format
       // throw error if not an acceptable response
       userData.DailyReminderTime = parsedInputText;
-    else {
+    } else {
       userData.DailyReminderTime = "08:00"; // default reminder time, machine readable format
     }
     userData.NewUser == false;
