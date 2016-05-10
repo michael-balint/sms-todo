@@ -15,41 +15,49 @@ const plivo = Plivo.RestAPI(plivoCreds);
 let db = new AWS.DynamoDB.DocumentClient();
 
 module.exports.handler = (event, context, callback) => {
-
-  if (event.To.toString() !== config.PHONE) {
-    console.log(event, config);
-    return callback(new Error("Invalid input."));
-  }
-
-  let userPhone = event.From.toString();
+  
   let inputText = event.Text;
 
-  async.waterfall([
-    (next) => {
-      let userParams = {
-        phone: userPhone
-      };
-      return getOrCreateUserData(userParams, next);
-    },
-    (UserData, next) => {
-      if (UserData.NewUser == true) {
-        return initialSetup(inputText, UserData, next);
-      } else {
-        return handleMessage(inputText, UserData, next);
-      }
-    },
-    (messageText, next) => {
+  if (event.To.toString() !== config.PHONE) {
+    if (event.From.toString() == config.PHONE) {
       let messageParams = {
         'src': config.PHONE,
-        'dst': userPhone,
-        'text': messageText
-      };
-      return sendMessage(messageParams, next);
+        'dst': event.To.toString(),
+        'text': "Hello! Welcome to the Woodhouse private beta. We're going to ask a few quick questions to get you setup. What's your name?"
+      }
+      return sendMessage (messageParams, callback);
+    } else {
+      console.log(event, config);
+      return callback(new Error("Invalid input."));
     }
-  ], (err, response) => {
-    return callback(err, response);
-  });
-
+  } else {
+    let userPhone = event.From.toString();
+    async.waterfall([
+      (next) => {
+        let userParams = {
+          phone: userPhone
+        };
+        return getOrCreateUserData(userParams, next);
+      },
+      (UserData, next) => {
+        if (UserData.NewUser == true) {
+          return initialSetup(inputText, UserData, next);
+        } else {
+          return handleMessage(inputText, UserData, next);
+        }
+      },
+      (messageText, next) => {
+        let messageParams = {
+          'src': config.PHONE,
+          'dst': userPhone,
+          'text': messageText
+        };
+        return sendMessage(messageParams, next);
+      }
+    ], (err, response) => {
+      return callback(err, response);
+    });
+  }
 };
 
 const getOrCreateUserData = (params, callback) => {
