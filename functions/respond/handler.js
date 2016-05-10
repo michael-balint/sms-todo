@@ -37,7 +37,7 @@ module.exports.handler = (event, context, callback) => {
           phone: userPhone,
           inputText: inputText
         };
-        return getOrCreateUserData(params, next);
+        return searchForUserData(params, next);
       },
       (userData, next) => {
         if (userData.NewUser == true) {
@@ -60,7 +60,7 @@ module.exports.handler = (event, context, callback) => {
   }
 };
 
-const getOrCreateUserData = (params, callback) => {
+const searchForUserData = (params, callback) => {
 
   db.get({
     "TableName": config.DB_TABLE_NAME,
@@ -69,15 +69,17 @@ const getOrCreateUserData = (params, callback) => {
     }
   }, (err, data) => {
     if (err) {
-      return callback(err);
+      console.error("DB GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       if (!data.Item) { // if user doesn't exist in DB
         data.Phone = params.phone;
         data.NewUser = true;
         data.Name = params.inputText;
         data.Todos = {};
+        console.log("No DB item found, creating a new item:", JSON.stringify(data, null, 2));
         return initializeUserData(data, callback);
       } else {
+        console.log("DB item found:", JSON.stringify(data.Item, null, 2));
         return callback(null, data.Item);
       }
     }
@@ -92,7 +94,15 @@ const initializeUserData = (userData, callback) => {
     "TableName": config.DB_TABLE_NAME,
     "Item": userData
   }, (err, data) => {
-    return callback(err, data);
+    if (err) {
+      console.error("Error initializing DB item. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+      console.log("DB item initialized successfully (dynamoDB bug, no data output, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
+      let params = {
+        "phone": userData.Phone
+      };
+      return searchForUserData(params, callback);
+    }
   });
 
 };
