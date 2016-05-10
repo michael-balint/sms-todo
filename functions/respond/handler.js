@@ -15,8 +15,6 @@ const plivo = Plivo.RestAPI(plivoCreds);
 let db = new AWS.DynamoDB.DocumentClient();
 
 module.exports.handler = (event, context, callback) => {
-  
-  let inputText = event.Text;
 
   if (event.To.toString() !== config.PHONE) {
     if (event.From.toString() == config.PHONE) {
@@ -31,19 +29,21 @@ module.exports.handler = (event, context, callback) => {
       return callback(new Error("Invalid input."));
     }
   } else {
+    let inputText = event.Text;
     let userPhone = event.From.toString();
     async.waterfall([
       (next) => {
-        let userParams = {
-          phone: userPhone
+        let params = {
+          phone: userPhone,
+          inputText: inputText
         };
-        return getOrCreateUserData(userParams, next);
+        return getOrCreateUserData(params, next);
       },
-      (UserData, next) => {
-        if (UserData.NewUser == true) {
-          return initialSetup(inputText, UserData, next);
+      (userData, next) => {
+        if (userData.NewUser == true) {
+          return initialSetup(inputText, userData, next);
         } else {
-          return handleMessage(inputText, UserData, next);
+          return handleMessage(inputText, userData, next);
         }
       },
       (messageText, next) => {
@@ -71,20 +71,22 @@ const getOrCreateUserData = (params, callback) => {
     if (err) {
       return callback(err);
     } else {
-      if (!data.Phone) { // if user doesn't exist in DB
+      if (!data.Item) { // if user doesn't exist in DB
         data.Phone = params.phone;
         data.NewUser = true;
+        data.Name = params.inputText;
         data.Todos = {};
-        return storeUserData(data, callback);
+        return initializeUserData(data, callback);
       } else {
-        return callback(null, data);
+        return callback(null, data.Item);
       }
     }
   });
 
 };
 
-const storeUserData = (userData, callback) => {
+// creates a new item in the DB
+const initializeUserData = (userData, callback) => {
 
   db.put({
     "TableName": config.DB_TABLE_NAME,
