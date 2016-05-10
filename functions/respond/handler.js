@@ -14,7 +14,7 @@ let db = new AWS.DynamoDB.DocumentClient();
 
 module.exports.handler = (event, context, callback) => {
 
-  if (event.To !== config.PHONE) {
+  if (event.To.toString() !== config.PHONE) {
     console.log(event, config);
     return callback(new Error("Invalid input."));
   }
