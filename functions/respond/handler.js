@@ -120,7 +120,10 @@ const updateUserData = (params, message, callback) => {
 // should be refactored to handle general commands post setup
 const handleMessage = (inputText, userData, callback) => {
 
-  let parsedInputText = inputText.replace(/\+/g, " ");
+  console.log(inputText.toString());
+  console.log(userData);
+
+  let parsedInputText = inputText.replace(/\+/g, " ").toString();
 
   // TODO: add in various conditions
   // 1) new task (Remind me ...)
@@ -177,7 +180,7 @@ const handleMessage = (inputText, userData, callback) => {
         // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
         break;
       case 'settings':
-        return callback(null, "Your settings are:\nName: ${userData.Name}\nTime Zone: ${userData.TimeZone}\nDaily Reminder Time: ${userData.DailyReminderTime}\nTo make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT).")
+        return callback(null, "Your settings are:\nName: " + userData.Name + "\nTime Zone: " + userData.UserTimeZone + "\nDaily Reminder Time: " + userData.DailyReminderTime + "\nTo make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT).")
         break;
       default:
         return callback(null, "Woodhouse is still pretty dumb, try typing 'help' to get a list of available options!");
