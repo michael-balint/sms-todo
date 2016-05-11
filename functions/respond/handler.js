@@ -120,9 +120,6 @@ const updateUserData = (params, message, callback) => {
 // should be refactored to handle general commands post setup
 const handleMessage = (inputText, userData, callback) => {
 
-  console.log(inputText.toString());
-  console.log(userData);
-
   let parsedInputText = inputText.replace(/\+/g, " ").toString();
 
   let params = {
@@ -130,9 +127,9 @@ const handleMessage = (inputText, userData, callback) => {
     "Key": {
       "Phone": userData.Phone
     },
-    // UpdateExpression: "set Name=:name",
+    // UpdateExpression: "set UserName=:name",
     // ExpressionAttributeValues: {
-    //   ":ame":userData.name,
+    //   ":name":userData.name,
     // },
     ReturnValues:"UPDATED_NEW"
   };
@@ -233,9 +230,9 @@ const initialSetup = (inputText, userData, callback) => {
     "Key": {
       "Phone": userData.Phone
     },
-    // UpdateExpression: "set Name=:name",
+    // UpdateExpression: "set UserName=:name",
     // ExpressionAttributeValues: {
-    //   ":ame":userData.name,
+    //   ":name":userData.name,
     // },
     ReturnValues:"UPDATED_NEW"
   };
