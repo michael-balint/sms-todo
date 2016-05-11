@@ -21,7 +21,7 @@ module.exports.handler = (event, context, callback) => {
       let messageParams = {
         'src': config.PHONE,
         'dst': event.To.toString(),
-        'text': "Hello! Welcome to the Woodhouse private beta. We're going to ask a few quick questions to get you setup. What's your name?"
+        'text': "Hello! My name is Woodhouse, welcome to my private beta. I'm going to ask a few quick questions to get you setup. What's your name?"
       }
       return sendMessage (messageParams, callback);
     } else {
@@ -218,11 +218,11 @@ const initialSetup = (inputText, userData, callback) => {
   if (!userData.UserTimeZone) {
     let tz = parsedInputText.toUpperCase();
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
-      return callback(null, 'Nice to meet you ' + userData.Name + '! Please reply with one of the four available timezones (ET, CT, MT, or PT).');
+      return callback(null, 'Nice to meet you ' + userData.Name + '! What timezone do you reside in (ET, CT, MT, or PT)?');
     } else {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
-      let message = "Awesome! We send out daily reminders of your top 3 todos (plus more) at 0800. If you'd like to be reminded at a different time, please reply with the new time in military time (if you don't want to change the daily reminder time reply 'next')?";
+      let message = "Fantastic! I send out a daily reminder of all your todos (plus more) at 0800. If you'd like me to remind you at a different time, please reply in military time (to keep the default, reply 'next' or to turn off the daily remember, reply 'no')?";
       updateUserData(params, message, callback);
     }
   } else if (!userData.DailyReminderTime) {
@@ -237,7 +237,7 @@ const initialSetup = (inputText, userData, callback) => {
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
       params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false}; // default reminder time, machine readable format
     }
-    let message = "Great, you're all set! Woodhouse is here to help you remember your daily tasks. We recommend you save this number. Type 'help' to get a list of commands to create your first todo!"; // insert tutorial text here
+    let message = "Perfect, you're all set! I'm here to help you remember your daily todos. First, I recommend you save this number. To get started, type 'help' to get a list of commands!"; // insert tutorial text here
     updateUserData(params, message, callback);
   }
 };
