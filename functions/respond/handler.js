@@ -135,11 +135,10 @@ const handleMessage = (inputText, userData, callback) => {
   };
 
   // TODO: add in various conditions
-  // 1) new task (Remind me ...)
+  // 1) new task (Remind me)
   // 2) list tasks (list)
-  // 3) help request (help)
-  // 4) change settings (settings)
-  // 5) edit task (Edit N)
+  // 3) edit task (Edit N)
+  // 4) delete task (Delete N)
 
   if (parsedInputText.search(/Remind me /gi) >= 0) { // condition for lowercase 'remind'
     parsedInputText.replace(/Remind me /gi, "");
@@ -181,16 +180,21 @@ const handleMessage = (inputText, userData, callback) => {
     }
   } else if (parsedInputText.search(/Daily Reminder Time /gi) >= 0) { // condition for lowercase 'daily reminder time', does this conflict with 'setting' command
     let drt = parsedInputText.replace(/Daily Reminder Time /gi, "");
+
+    let message = "Your daily reminder time has been updated.";
     if (drt == "disable") {
       params.UpdateExpression = "set DailyReminderTime=:drt";
       params.ExpressionAttributeValues = {":drt": false};
+      updateUserData(params, message, callback);
     } else {
-      // add in regex check for 00:00 format
-      params.UpdateExpression = "set DailyReminderTime=:drt";
-      params.ExpressionAttributeValues = {":drt": drt};
+      if (validateTime(drt)) {
+        params.UpdateExpression = "set DailyReminderTime=:drt";
+        params.ExpressionAttributeValues = {":drt": drt};
+        updateUserData(params, message, callback);
+      } else {
+        return callback(null, "Oops, that's not a valid time format. Text the time in military format (e.g. Daily Reminder Time 09:30).");
+      }
     }
-    let message = "Your daily reminder time has been updated.";
-    updateUserData(params, message, callback);
   } else {
     switch(parsedInputText.toLowerCase()) {
       case 'help':
@@ -198,6 +202,7 @@ const handleMessage = (inputText, userData, callback) => {
         break;
       case 'list':
         // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
+        // Query and Scan the Data http://docs.aws.amazon.com/amazondynamodb/latest/gettingstartedguide/GettingStarted.NodeJs.04.html
         break;
       case 'settings':
         let drt = userData.DailyReminderTime;
@@ -267,4 +272,9 @@ const initialSetup = (inputText, userData, callback) => {
 
 function toTitleCase(str) {
   return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+}
+
+function validateTime(time) {
+  var re = /^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
+  return re.test(time);
 }
