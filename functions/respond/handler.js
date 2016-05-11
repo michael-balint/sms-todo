@@ -115,7 +115,7 @@ const updateUserData = (params, message, callback) => {
       return callback(null, message);
     }
   });
-}
+};
 
 // should be refactored to handle general commands post setup
 const handleMessage = (inputText, userData, callback) => {
@@ -124,6 +124,18 @@ const handleMessage = (inputText, userData, callback) => {
   console.log(userData);
 
   let parsedInputText = inputText.replace(/\+/g, " ").toString();
+
+  let params = {
+    "TableName": config.DB_TABLE_NAME,
+    "Key": {
+      "Phone": userData.Phone
+    },
+    // UpdateExpression: "set Name=:name",
+    // ExpressionAttributeValues: {
+    //   ":ame":userData.name,
+    // },
+    ReturnValues:"UPDATED_NEW"
+  };
 
   // TODO: add in various conditions
   // 1) new task (Remind me ...)
@@ -148,39 +160,48 @@ const handleMessage = (inputText, userData, callback) => {
     } else {
       return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
     }
+  } else if (parsedInputText.search(/Delete /gi) >= 0) {
+    let todoNumber = Number(parsedInputText.replace(/Delete /gi, ""));
+    // TODO: get list of all todoNumbers associated with user
+    if (todoNumber === parseInt(data, 10)) {
+      // delete todo
+    }
   } else if (parsedInputText.search(/Name /gi) >= 0) { // condition for lowercase 'name', does this conflict with 'setting' command
     userData.Name = toTitleCase(parsedInputText.replace(/Name /gi, ""));
-    storeUserData(userData, (err, data) => {
-      // TODO: handle error
-      return callback(null, "Great! Your name has been updated.");
-    });
+    let message = "Great! Your name has been updated.";
+    updateUserData(userData, message, callback);
   } else if (parsedInputText.search(/Time Zone /gi) >= 0) { // condition for lowercase 'time zone', does this conflict with 'setting' command
     userData.TimeZone = parsedInputText.replace(/Time Zone /gi, "").toUpperCase();
     if (userData.TimeZone != 'ET' || userData.TimeZone != 'CT' || userData.TimeZone != 'MT' || userData.TimeZone != 'PT') {
       return callback(null, 'Please use one of the four available timezones (ET, CT, MT, or PT) and try again.');
     } else {
-      storeUserData(userData, (err, data) => {
-        // TODO: handle error
-        return callback(null, "Amazing! Your time zone has been updated.");
-      });
+      let message = "Amazing! Your time zone has been updated.";
+      updateUserData(userData, message, callback);
     }
   } else if (parsedInputText.search(/Daily Reminder Time /gi) >= 0) { // condition for lowercase 'daily reminder time', does this conflict with 'setting' command
-    UserData.DailyReminderTime = parsedInputText.replace(/Daily Reminder Time /gi, "");
-    // TODO: use NLP to parse out the setting and new value, throw exception if unable to parse into machine readable time
-    storeUserData(userData, (err, data) => {
-      // TODO: handle error
-      return callback(null, "Fabulous! Your daily reminder time has been updated.");
-    });
+    let drt = parsedInputText.replace(/Daily Reminder Time /gi, "");
+    console.log(drt)
+    if (drt == "disable") {
+      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
+      params.ExpressionAttributeValues = {":drt": false, ":nu": false};
+    } else {
+      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
+      params.ExpressionAttributeValues = {":drt": drt, ":nu": false};
+    }
+    let message = "Fabulous! Your daily reminder time has been updated.";
+    updateUserData(params, message, callback);
   } else {
     switch(parsedInputText.toLowerCase()) {
       case 'help':
-        return callback(null, "1) To create a new todo, start a text message with 'Remind me'\n2) To get the list of all your todos, text 'list'\n3) To edit a todo, text 'Edit N' (where N is an existing todo number)\n4) to view your settings type 'settings'");
+        return callback(null, "1) create a todo, text 'Remind me' and we'll get started 2) retrieve the list of all your todos, text 'list' 3) edit a todo, text 'Edit N' (where N is the todo number) 4) delete a todo, text 'Delete N' (where N is the todo number) 5) view your settings type 'settings'");
         break;
       case 'list':
         // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
         break;
       case 'settings':
-        return callback(null, "Your settings are:\nName: " + userData.Name + "\nTime Zone: " + userData.UserTimeZone + "\nDaily Reminder Time: " + userData.DailyReminderTime + "\nTo make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT).")
+        let drt = userData.DailyReminderTime;
+        if (drt == false) { drt = "Disabled"; }
+        return callback(null, "Your settings are: 1) Name: " + userData.Name + " 2) Time Zone: " + userData.UserTimeZone + " 3) Daily Reminder Time: " + drt + ". To make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT or Daily Reminder Time 0900).")
         break;
       default:
         return callback(null, "Woodhouse is still pretty dumb, try typing 'help' to get a list of available options!");
@@ -222,21 +243,21 @@ const initialSetup = (inputText, userData, callback) => {
     } else {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
-      let message = "Fantastic! I send out a daily reminder of all your todos (plus more) at 0800. If you'd like me to remind you at a different time, please reply in military time (to keep the default, reply 'next' or to turn off the daily remember, reply 'no')?";
+      let message = "Fantastic! By default, I send a daily reminder of all your todos at 08:00. If you'd like me to remind you at a different time, please reply in military time (to keep the default, reply 'next' or to turn off the daily remember, reply 'disable')?";
       updateUserData(params, message, callback);
     }
   } else if (!userData.DailyReminderTime) {
     let drt = parsedInputText.toLowerCase();
-    if (drt != 'next' && drt != 'no') {
-      // TODO: add NLP to chnage the time to machine readable format
+    if (drt != 'next' && drt != 'disable') {
+      // TODO: add NLP to check and change the time to machine readable format
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
-      params.ExpressionAttributeValues = {":drt": parsedInputText, ":nu": false}; // default reminder time, machine readable format
-    } else if (drt == 'no') {
+      params.ExpressionAttributeValues = {":drt": drt, ":nu": false};
+    } else if (drt == 'disable') {
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
-      params.ExpressionAttributeValues = {":drt": false, ":nu": false}; // default reminder time, machine readable format
-    } else {
+      params.ExpressionAttributeValues = {":drt": false, ":nu": false};
+    } else { // default reminder time
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
-      params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false}; // default reminder time, machine readable format
+      params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false};
     }
     let message = "Perfect, you're all set! I'm here to help you remember your daily todos. First things first, save my number! To get started, type 'help' to get a list of commands!"; // insert tutorial text here
     updateUserData(params, message, callback);
