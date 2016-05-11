@@ -180,21 +180,19 @@ const handleMessage = (inputText, userData, callback) => {
     }
   } else if (parsedInputText.search(/Daily Reminder Time /gi) >= 0) { // condition for lowercase 'daily reminder time', does this conflict with 'setting' command
     let drt = parsedInputText.replace(/Daily Reminder Time /gi, "");
-
     let message = "Your daily reminder time has been updated.";
+    params.UpdateExpression = "set DailyReminderTime=:drt";
     if (drt == "disable") {
-      params.UpdateExpression = "set DailyReminderTime=:drt";
       params.ExpressionAttributeValues = {":drt": false};
-      updateUserData(params, message, callback);
     } else {
       if (validateTime(drt)) {
-        params.UpdateExpression = "set DailyReminderTime=:drt";
         params.ExpressionAttributeValues = {":drt": drt};
-        updateUserData(params, message, callback);
       } else {
         return callback(null, "Oops, that's not a valid time format. Text the time in military format (e.g. Daily Reminder Time 09:30).");
       }
     }
+    console.log('test');
+    updateUserData(params, message, callback);
   } else {
     switch(parsedInputText.toLowerCase()) {
       case 'help':
@@ -254,18 +252,19 @@ const initialSetup = (inputText, userData, callback) => {
     }
   } else if (!userData.DailyReminderTime) {
     let drt = parsedInputText.toLowerCase();
+    let message = "Perfect, you're all set! I'm here to help you remember your daily todos. First things first, save my number! To get started, type 'help' to get a list of commands!";
+    params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
     if (drt != 'next' && drt != 'disable') {
-      // TODO: add NLP to check and change the time to machine readable format
-      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
-      params.ExpressionAttributeValues = {":drt": drt, ":nu": false};
+      if (validateTime(drt)) {
+        params.ExpressionAttributeValues = {":drt": drt, ":nu": false};
+      } else {
+        return callback(null, "Oops, that's not a valid time format. Text the time in military format (e.g. Daily Reminder Time 09:30).");
+      }
     } else if (drt == 'disable') {
-      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
       params.ExpressionAttributeValues = {":drt": false, ":nu": false};
     } else { // default reminder time
-      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
       params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false};
     }
-    let message = "Perfect, you're all set! I'm here to help you remember your daily todos. First things first, save my number! To get started, type 'help' to get a list of commands!"; // insert tutorial text here
     updateUserData(params, message, callback);
   }
 };
