@@ -218,7 +218,7 @@ const sendMessage = (params, callback) => {
 
   plivo.send_message(params, (status, response) => {
     if (status != 202 || status != 200) {
-      console.log(status);
+      console.error("Plivo error: ", status);
     }
     return callback(null, JSON.stringify(response, null, 2));
   });
