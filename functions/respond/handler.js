@@ -171,12 +171,14 @@ const handleMessage = (inputText, userData, callback) => {
     let message = "Great! Your name has been updated.";
     updateUserData(userData, message, callback);
   } else if (parsedInputText.search(/Time Zone /gi) >= 0) { // condition for lowercase 'time zone', does this conflict with 'setting' command
-    userData.TimeZone = parsedInputText.replace(/Time Zone /gi, "").toUpperCase();
-    if (userData.TimeZone != 'ET' || userData.TimeZone != 'CT' || userData.TimeZone != 'MT' || userData.TimeZone != 'PT') {
-      return callback(null, 'Please use one of the four available timezones (ET, CT, MT, or PT) and try again.');
+    let tz = parsedInputText.replace(/Time Zone /gi, "").toUpperCase();
+    if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
+      return callback(null, 'Oops! Something went wrong updating your time zone. Text one of the four available timezones (ET, CT, MT, or PT) and try again.');
     } else {
-      let message = "Amazing! Your time zone has been updated.";
-      updateUserData(userData, message, callback);
+      params.UpdateExpression = "set UserTimeZone=:tz";
+      params.ExpressionAttributeValues = {":tz": tz};
+      let message = "Your time zone has been updated.";
+      updateUserData(params, message, callback);
     }
   } else if (parsedInputText.search(/Daily Reminder Time /gi) >= 0) { // condition for lowercase 'daily reminder time', does this conflict with 'setting' command
     let drt = parsedInputText.replace(/Daily Reminder Time /gi, "");
@@ -185,10 +187,11 @@ const handleMessage = (inputText, userData, callback) => {
       params.UpdateExpression = "set DailyReminderTime=:drt";
       params.ExpressionAttributeValues = {":drt": false};
     } else {
+      // add in regex check for 00:00 format
       params.UpdateExpression = "set DailyReminderTime=:drt";
       params.ExpressionAttributeValues = {":drt": drt};
     }
-    let message = "Fabulous! Your daily reminder time has been updated.";
+    let message = "Your daily reminder time has been updated.";
     updateUserData(params, message, callback);
   } else {
     switch(parsedInputText.toLowerCase()) {
