@@ -230,6 +230,9 @@ const initialSetup = (inputText, userData, callback) => {
       // TODO: add NLP to chnage the time to machine readable format
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
       params.ExpressionAttributeValues = {":drt": parsedInputText, ":nu": false}; // default reminder time, machine readable format
+    } else if (parsedInputText != 'no' && parsedInputText != 'No' && parsedInputText != 'NO') {
+      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
+      params.ExpressionAttributeValues = {":drt": null, ":nu": false}; // default reminder time, machine readable format
     } else {
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
       params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false}; // default reminder time, machine readable format
