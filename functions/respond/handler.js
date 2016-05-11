@@ -182,11 +182,11 @@ const handleMessage = (inputText, userData, callback) => {
     let drt = parsedInputText.replace(/Daily Reminder Time /gi, "");
     console.log(drt)
     if (drt == "disable") {
-      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
-      params.ExpressionAttributeValues = {":drt": false, ":nu": false};
+      params.UpdateExpression = "set DailyReminderTime=:drt";
+      params.ExpressionAttributeValues = {":drt": false};
     } else {
-      params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
-      params.ExpressionAttributeValues = {":drt": drt, ":nu": false};
+      params.UpdateExpression = "set DailyReminderTime=:drt";
+      params.ExpressionAttributeValues = {":drt": drt};
     }
     let message = "Fabulous! Your daily reminder time has been updated.";
     updateUserData(params, message, callback);
