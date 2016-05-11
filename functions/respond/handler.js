@@ -14,10 +14,11 @@ const plivo = Plivo.RestAPI(plivoCreds);
 
 let db = new AWS.DynamoDB.DocumentClient();
 
+// Serverless function
 module.exports.handler = (event, context, callback) => {
 
-  if (event.To.toString() !== config.PHONE) {
-    if (event.From.toString() == config.PHONE) {
+  if (event.To.toString() !== config.PHONE) { // validates SMS parameters
+    if (event.From.toString() == config.PHONE) { // initiates new user onboarding
       let messageParams = {
         'src': config.PHONE,
         'dst': event.To.toString(),
@@ -32,21 +33,21 @@ module.exports.handler = (event, context, callback) => {
     let inputText = event.Text;
     let userPhone = event.From.toString();
     async.waterfall([
-      (next) => {
+      (next) => { // locate the user or create a new one
         let params = {
           phone: userPhone,
           inputText: inputText
         };
         return searchForUserData(params, next);
       },
-      (userData, next) => {
+      (userData, next) => { // run through initialSetup or handleMessage
         if (userData.NewUser == true) {
           return initialSetup(inputText, userData, next);
         } else {
           return handleMessage(inputText, userData, next);
         }
       },
-      (messageText, next) => {
+      (messageText, next) => { // send response SMS
         let messageParams = {
           'src': config.PHONE,
           'dst': userPhone,
@@ -60,6 +61,7 @@ module.exports.handler = (event, context, callback) => {
   }
 };
 
+// searches for an item in the DB, if not found, creates a new item
 const searchForUserData = (params, callback) => {
 
   db.get({
@@ -71,7 +73,7 @@ const searchForUserData = (params, callback) => {
     if (err) {
       console.error("DB GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
     } else {
-      if (!data.Item) { // if user doesn't exist in DB
+      if (!data.Item) { // checks to see if DB item exists
         data.Phone = params.phone;
         data.NewUser = true;
         data.UserName = params.inputText;
@@ -96,16 +98,17 @@ const initializeUserData = (userData, callback) => {
     if (err) {
       console.error("Error initializing DB item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
-      console.log("DB item initialized successfully (dynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
+      console.log("DB item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
       let params = {
         "phone": userData.Phone
       };
-      return searchForUserData(params, callback);
+      return searchForUserData(params, callback); // required due to DynamoDB
     }
   });
 
 };
 
+// updates an item in the DB
 const updateUserData = (params, message, callback) => {
   db.update(params, (err, data) => {
     if (err) {
@@ -117,7 +120,7 @@ const updateUserData = (params, message, callback) => {
   });
 };
 
-// should be refactored to handle general commands post setup
+// handle all input conditions from user
 const handleMessage = (inputText, userData, callback) => {
 
   let parsedInputText = inputText.replace(/\+/g, " ").toString();
