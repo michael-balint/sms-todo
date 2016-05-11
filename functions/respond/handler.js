@@ -226,18 +226,19 @@ const initialSetup = (inputText, userData, callback) => {
       updateUserData(params, message, callback);
     }
   } else if (!userData.DailyReminderTime) {
-    if (parsedInputText != 'next' && parsedInputText != 'Next') {
+    let drt = parsedInputText.toLowerCase();
+    if (drt != 'next' && drt != 'no') {
       // TODO: add NLP to chnage the time to machine readable format
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
       params.ExpressionAttributeValues = {":drt": parsedInputText, ":nu": false}; // default reminder time, machine readable format
-    } else if (parsedInputText != 'no' && parsedInputText != 'No' && parsedInputText != 'NO') {
+    } else if (drt == 'no') {
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
-      params.ExpressionAttributeValues = {":drt": null, ":nu": false}; // default reminder time, machine readable format
+      params.ExpressionAttributeValues = {":drt": false, ":nu": false}; // default reminder time, machine readable format
     } else {
       params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";
       params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false}; // default reminder time, machine readable format
     }
-    let message = "Perfect, you're all set! I'm here to help you remember your daily todos. First, I recommend you save this number. To get started, type 'help' to get a list of commands!"; // insert tutorial text here
+    let message = "Perfect, you're all set! I'm here to help you remember your daily todos. First things first, save my number! To get started, type 'help' to get a list of commands!"; // insert tutorial text here
     updateUserData(params, message, callback);
   }
 };
