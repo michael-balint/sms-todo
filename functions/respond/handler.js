@@ -217,8 +217,10 @@ const handleMessage = (inputText, userData, callback) => {
 const sendMessage = (params, callback) => {
 
   plivo.send_message(params, (status, response) => {
-    // TODO: handle status + errors
-    callback(null, response);
+    if (status != 202 || status != 200) {
+      console.log(status);
+    }
+    return callback(null, JSON.stringify(response, null, 2));
   });
 
 };
