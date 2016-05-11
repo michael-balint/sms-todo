@@ -21,7 +21,7 @@ module.exports.handler = (event, context, callback) => {
       let messageParams = {
         'src': config.PHONE,
         'dst': event.To.toString(),
-        'text': "Hello! My name is Woodhouse, welcome to my private beta. I'm going to ask a few quick questions to get you setup. What's your name?"
+        'text': "Hello! My name is Woodhouse, welcome to my private beta. I'm here to help manage all your todos. To get started, I'm going to ask a few quick questions. What's your name?"
       }
       return sendMessage (messageParams, callback);
     } else {
