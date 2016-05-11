@@ -74,7 +74,7 @@ const searchForUserData = (params, callback) => {
       if (!data.Item) { // if user doesn't exist in DB
         data.Phone = params.phone;
         data.NewUser = true;
-        data.Name = params.inputText;
+        data.UserName = params.inputText;
         data.Todos = {};
         console.log("No DB item found, creating a new item:", JSON.stringify(data, null, 2));
         return initializeUserData(data, callback);
@@ -167,13 +167,15 @@ const handleMessage = (inputText, userData, callback) => {
       // delete todo
     }
   } else if (parsedInputText.search(/Name /gi) >= 0) { // condition for lowercase 'name', does this conflict with 'setting' command
-    userData.Name = toTitleCase(parsedInputText.replace(/Name /gi, ""));
+    let name = toTitleCase(parsedInputText.replace(/Name /gi, ""));
+    params.UpdateExpression = "set UserName=:name";
+    params.ExpressionAttributeValues = {":name": name};
     let message = "Great! Your name has been updated.";
-    updateUserData(userData, message, callback);
+    updateUserData(params, message, callback);
   } else if (parsedInputText.search(/Time Zone /gi) >= 0) { // condition for lowercase 'time zone', does this conflict with 'setting' command
     let tz = parsedInputText.replace(/Time Zone /gi, "").toUpperCase();
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
-      return callback(null, 'Oops! Something went wrong updating your time zone. Text one of the four available timezones (ET, CT, MT, or PT) and try again.');
+      return callback(null, "Oops, that's not an option. Text one of the four available timezones (ET, CT, MT, or PT) and try again.");
     } else {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
@@ -182,7 +184,6 @@ const handleMessage = (inputText, userData, callback) => {
     }
   } else if (parsedInputText.search(/Daily Reminder Time /gi) >= 0) { // condition for lowercase 'daily reminder time', does this conflict with 'setting' command
     let drt = parsedInputText.replace(/Daily Reminder Time /gi, "");
-    console.log(drt)
     if (drt == "disable") {
       params.UpdateExpression = "set DailyReminderTime=:drt";
       params.ExpressionAttributeValues = {":drt": false};
@@ -204,7 +205,7 @@ const handleMessage = (inputText, userData, callback) => {
       case 'settings':
         let drt = userData.DailyReminderTime;
         if (drt == false) { drt = "Disabled"; }
-        return callback(null, "Your settings are: 1) Name: " + userData.Name + " 2) Time Zone: " + userData.UserTimeZone + " 3) Daily Reminder Time: " + drt + ". To make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT or Daily Reminder Time 0900).")
+        return callback(null, "Your settings are: 1) Name: " + userData.UserName + " 2) Time Zone: " + userData.UserTimeZone + " 3) Daily Reminder Time: " + drt + ". To make changes to a setting, text the name of the setting and the new value (e.g. Time Zone PT or Daily Reminder Time 0900).")
         break;
       default:
         return callback(null, "Woodhouse is still pretty dumb, try typing 'help' to get a list of available options!");
