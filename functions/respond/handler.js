@@ -89,7 +89,6 @@ const searchForUserData = (params, callback) => {
 
 // creates a new item in the DB
 const initializeUserData = (userData, callback) => {
-
   db.put({
     "TableName": config.DB_TABLE_NAME,
     "Item": userData
@@ -108,7 +107,6 @@ const initializeUserData = (userData, callback) => {
 };
 
 const updateUserData = (params, message, callback) => {
-  console.log(message);
   db.update(params, (err, data) => {
     if (err) {
       console.error("Error updating DB item. Error JSON:", JSON.stringify(err, null, 2));
@@ -217,7 +215,7 @@ const initialSetup = (inputText, userData, callback) => {
   if (!userData.UserTimeZone) {
     let tz = parsedInputText.toUpperCase();
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
-      return callback(null, 'Please reply with one of the four available timezones (ET, CT, MT, or PT).');
+      return callback(null, 'Nice to meet you ' + userData.Name + '! Please reply with one of the four available timezones (ET, CT, MT, or PT).');
     } else {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
