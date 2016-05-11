@@ -76,7 +76,7 @@ const searchForUserData = (params, callback) => {
       if (!data.Item) { // checks to see if DB item exists
         data.Phone = params.phone;
         data.NewUser = true;
-        data.UserName = params.inputText;
+        data.UserName = toTitleCase(params.inputText);
         data.Todos = {};
         console.log("No DB item found, creating a new item:", JSON.stringify(data, null, 2));
         return initializeUserData(data, callback);
@@ -123,7 +123,7 @@ const updateUserData = (params, message, callback) => {
 // handle all input conditions from user
 const handleMessage = (inputText, userData, callback) => {
 
-  let parsedInputText = inputText.replace(/\+/g, " ").toString();
+  let parsedInputText = inputText.replace(/\+/g, " ").toString().toLowerCase();
 
   let params = {
     "TableName": config.DB_TABLE_NAME,
@@ -143,15 +143,15 @@ const handleMessage = (inputText, userData, callback) => {
   // 3) edit task (Edit N)
   // 4) delete task (Delete N)
 
-  if (parsedInputText.search(/Remind me /gi) >= 0) { // condition for lowercase 'remind'
-    parsedInputText.replace(/Remind me /gi, "");
+  if (parsedInputText.search(/remind me/gi) >= 0) { // condition for lowercase 'remind'
+    parsedInputText.replace(/remind me/gi, "");
     // TODO: add NLP to parse out the todo text
     // save it to the DB (subject, qty, date/time, importance)
     // may have to ask the user for additional information if not provided
     // will require a nested check to remember the Reminder task
     // reference it to the cron job
-  } else if (parsedInputText.search(/Edit /gi) >= 0) { // condition for lowercase 'edit'
-    let todoNumber = Number(parsedInputText.replace(/Edit /gi, ""));
+  } else if (parsedInputText.search(/edit /gi) >= 0) { // condition for lowercase 'edit'
+    let todoNumber = Number(parsedInputText.replace(/edit /gi, ""));
     // TODO: get list of all todoNumbers associated with user
     if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
       // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
@@ -159,20 +159,20 @@ const handleMessage = (inputText, userData, callback) => {
     } else {
       return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
     }
-  } else if (parsedInputText.search(/Delete /gi) >= 0) {
-    let todoNumber = Number(parsedInputText.replace(/Delete /gi, ""));
+  } else if (parsedInputText.search(/delete /gi) >= 0) {
+    let todoNumber = Number(parsedInputText.replace(/delete /gi, ""));
     // TODO: get list of all todoNumbers associated with user
     if (todoNumber === parseInt(data, 10)) {
       // delete todo
     }
-  } else if (parsedInputText.search(/Name /gi) >= 0) { // condition for lowercase 'name', does this conflict with 'setting' command
-    let name = toTitleCase(parsedInputText.replace(/Name /gi, ""));
+  } else if (parsedInputText.toLowerCase().search(/name /gi) >= 0) { // condition for lowercase 'name', does this conflict with 'setting' command
+    let name = toTitleCase(parsedInputText.toLowerCase().replace(/name /gi, ""));
     params.UpdateExpression = "set UserName=:name";
     params.ExpressionAttributeValues = {":name": name};
-    let message = "Great! Your name has been updated.";
+    let message = "Your name has been updated.";
     updateUserData(params, message, callback);
-  } else if (parsedInputText.search(/Time Zone /gi) >= 0) { // condition for lowercase 'time zone', does this conflict with 'setting' command
-    let tz = parsedInputText.replace(/Time Zone /gi, "").toUpperCase();
+  } else if (parsedInputText.search(/time zone /gi) >= 0) {
+    let tz = parsedInputText.replace(/time zone /gi, "").toUpperCase();
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
       return callback(null, "Oops, that's not an option. Text one of the four available timezones (ET, CT, MT, or PT) and try again.");
     } else {
@@ -181,8 +181,8 @@ const handleMessage = (inputText, userData, callback) => {
       let message = "Your time zone has been updated.";
       updateUserData(params, message, callback);
     }
-  } else if (parsedInputText.search(/Daily Reminder Time /gi) >= 0) { // condition for lowercase 'daily reminder time', does this conflict with 'setting' command
-    let drt = parsedInputText.replace(/Daily Reminder Time /gi, "");
+  } else if (parsedInputText.search(/daily reminder time /gi) >= 0) {
+    let drt = parsedInputText.replace(/daily reminder time /gi, "");
     let message = "Your daily reminder time has been updated.";
     params.UpdateExpression = "set DailyReminderTime=:drt";
     if (drt == "disable") {
@@ -194,10 +194,9 @@ const handleMessage = (inputText, userData, callback) => {
         return callback(null, "Oops, that's not a valid time format. Text the time in military format (e.g. Daily Reminder Time 09:30).");
       }
     }
-    console.log('test');
     updateUserData(params, message, callback);
   } else {
-    switch(parsedInputText.toLowerCase()) {
+    switch(parsedInputText) {
       case 'help':
         return callback(null, "1) create a todo, text 'Remind me' and we'll get started 2) retrieve the list of all your todos, text 'list' 3) edit a todo, text 'Edit N' (where N is the todo number) 4) delete a todo, text 'Delete N' (where N is the todo number) 5) view your settings type 'settings'");
         break;
@@ -248,7 +247,7 @@ const initialSetup = (inputText, userData, callback) => {
   if (!userData.UserTimeZone) {
     let tz = parsedInputText.toUpperCase();
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
-      return callback(null, 'Nice to meet you ' + userData.Name + '! What timezone do you reside in (ET, CT, MT, or PT)?');
+      return callback(null, 'Nice to meet you ' + userData.UserName + '! What timezone do you reside in (ET, CT, MT, or PT)?');
     } else {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
