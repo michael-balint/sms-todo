@@ -1,5 +1,5 @@
-// user.js
-// manages the USER TABLE
+// dynamo.js
+// manages the DynamoDB tables
 // =============
 
 var AWS = require('aws-sdk');
@@ -9,16 +9,16 @@ var db = new AWS.DynamoDB.DocumentClient();
 var config = require('../config.json');
 
 // creates a new item in the USER TABLE
-function createUser(params, callback) {
+function createItem(params, config, callback) {
   db.put({
     "TableName": config.DB_TABLE_USERS,
     "Item": params
   }, (err, data) => {
     if (err) {
-      console.error("Error initializing USER TABLE item. Error JSON:", JSON.stringify(err, null, 2));
+      console.error("Error initializing TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
-      console.log("USER TABLE item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
-      var params = {
+      console.log("TABLE item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
+      var params = { // need to review
         phone: params.Phone
       }
       return searchForUser(params, callback); // required due to DynamoDB
@@ -27,7 +27,7 @@ function createUser(params, callback) {
 }
 
 // searches for an item in the USER TABLE, if not found, creates a new item
-function searchForUser(params, callback) {
+function searchForItem(params, callback) {
   db.get({
     "TableName": config.DB_TABLE_USERS,
     "Key": {

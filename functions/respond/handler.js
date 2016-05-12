@@ -7,7 +7,7 @@ const moment = require('moment');
 
 // local js libraries
 const sms = require('./lib/sms.js');
-const user = require('./lib/user.js');
+const dynamo = require('./lib/dynamo.js');
 const todo = require('./lib/todo.js');
 const plivo = require('./lib/plivo.js');
 
@@ -47,33 +47,33 @@ module.exports.handler = (event, context, callback) => {
           inputText: inputText
         };
 
-        return user.searchForUser(params, next);
+        return dynamo.searchForUser(params, next);
 
       },
       (userData, next) => { // run through initialSetup or handleMessage
 
-        if (userData.NewUser == true) {
-          return sms.initialSetup(inputText, userData, next);
-        } else {
+        if (userData.NewUser == true) { return sms.initialSetup(inputText, userData, next); }
 
-          // create todo
+        else {
+
+          // CREATE todo
           if (inputText.search(/remind me to /gi) >= 0) { return sms.createTodo(inputText, userData, next); }
 
-          // list todo
+          // LIST todo
           else if (inputText.search(/list /gi) >= 0) { return sms.listTodo(inputText, userData, next); }
 
-          // edit todo
+          // EDIT todo
           else if (inputText.search(/edit /gi) >= 0) { return sms.editTodo(inputText, userData, next); }
 
-          // delete (remove) todo
+          // DELETE (remove) todo
           else if (inputText.search(/delete /gi) >= 0) { return sms.removeTodo(inputText, userData, next); }
           
-          // update settings
+          // UPDATE settings
           else if (inputText.search(/name /gi) >= 0 ||
                       inputText.search(/time zone /gi) >= 0 ||
                       inputText.search(/daily reminder time /gi) >= 0) { return sms.updateSettings(inputText, userData, next); }
 
-          // initial setup and other use cases
+          // INITIAL SETUP and other use cases
           else { return sms.processMessage(inputText, userData, next); }
 
         }

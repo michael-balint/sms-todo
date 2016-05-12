@@ -4,7 +4,7 @@
 var async = require('async');
 
 // local js libraries
-var userTable = require('./user.js');
+var dynamo = require('./dynamo.js');
 var alchemy = require('./alchemy.js');
 var config = require('../config.json');
 
@@ -54,7 +54,7 @@ function createTodo(inputText, userData, callback) {
     (params, next) => {
       var message = "Got it. Task saved.";
       console.log(params);
-      return userTable.updateUser(params, message, callback);
+      return dynamo.updateUser(params, message, callback);
     }
   ], (err) => {
     return callback(err, response);
@@ -176,7 +176,7 @@ function updateSettings(inputText, userData, callback) {
     params.UpdateExpression = "set UserName=:name";
     params.ExpressionAttributeValues = {":name": name};
 
-    userTable.updateUser(params, message, callback);
+    dynamo.updateUser(params, message, callback);
 
   } else if (inputText.search(/time zone /gi) >= 0) { // update TIME ZONE
 
@@ -190,7 +190,7 @@ function updateSettings(inputText, userData, callback) {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
 
-      userTable.updateUser(params, message, callback);
+      dynamo.updateUser(params, message, callback);
     }
 
   } else if (inputText.search(/daily reminder time /gi) >= 0) { // update DAILY REMINDER TIME
@@ -210,7 +210,7 @@ function updateSettings(inputText, userData, callback) {
       }
     }
 
-    userTable.updateUser(params, message, callback);
+    dynamo.updateUser(params, message, callback);
   }
 }
 
@@ -257,7 +257,7 @@ function initialSetup(inputText, userData, callback) {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
       var message = "Fantastic! By default, I send a daily reminder of all your todos at 08:00. If you'd like me to remind you at a different time, please reply in military time (to keep the default, reply 'next' or to turn off the daily remember, reply 'disable')?";
-      userTable.updateUser(params, message, callback);
+      dynamo.updateUser(params, message, callback);
     }
 
   } else if (!userData.DailyReminderTime) {
@@ -281,7 +281,7 @@ function initialSetup(inputText, userData, callback) {
       params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false};
     }
 
-    userTable.updateUser(params, message, callback);
+    dynamo.updateUser(params, message, callback);
   }
 }
 
