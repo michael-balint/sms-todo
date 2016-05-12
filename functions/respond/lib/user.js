@@ -10,18 +10,15 @@ var config = require('../config.json');
 module.exports = {
 
   // creates a new item in the USER TABLE
-  createUser: function(userData, callback) {
+  createUser: function(params, callback) {
     db.put({
       "TableName": config.DB_TABLE_USERS,
-      "Item": userData
+      "Item": params
     }, (err, data) => {
       if (err) {
         console.error("Error initializing USER TABLE item. Error JSON:", JSON.stringify(err, null, 2));
       } else {
         console.log("USER TABLE item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
-        var params = {
-          "phone": userData.Phone
-        };
         return self.searchForUser(params, callback); // required due to DynamoDB
       }
     });
