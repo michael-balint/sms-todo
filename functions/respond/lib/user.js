@@ -38,7 +38,9 @@ function searchForUser(params, callback) {
       console.error("USER TABLE GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       if (!data.Item) { // checks to see if USER TABLE item exists
-        // check to see if the user was invited or rogue
+
+        // TODO: check to see if the user was invited
+
         data.Phone = params.phone;
         data.NewUser = true;
         data.UserName = toTitleCase(params.inputText);
