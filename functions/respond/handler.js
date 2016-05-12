@@ -7,7 +7,7 @@ const moment = require('moment');
 
 // local js libraries
 const sms = require('./lib/sms.js');
-const userTable = require('./lib/user.js');
+const user = require('./lib/user.js');
 const plivo = require('./lib/plivo.js');
 
 // load and set config files
@@ -46,7 +46,7 @@ module.exports.handler = (event, context, callback) => {
           inputText: inputText
         };
 
-        return userTable.searchForUserData(params, next);
+        return user.searchForUser(params, next);
 
       },
       (userData, next) => { // run through initialSetup or handleMessage

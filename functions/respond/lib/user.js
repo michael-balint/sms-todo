@@ -10,7 +10,7 @@ var config = require('../config.json');
 module.exports = {
 
   // creates a new item in the USER TABLE
-  createUserData: function(userData, callback) {
+  createUser: function(userData, callback) {
     db.put({
       "TableName": config.DB_TABLE_USERS,
       "Item": userData
@@ -22,13 +22,13 @@ module.exports = {
         var params = {
           "phone": userData.Phone
         };
-        return self.searchForUserData(params, callback); // required due to DynamoDB
+        return self.searchForUser(params, callback); // required due to DynamoDB
       }
     });
   },
 
   // searches for an item in the USER TABLE, if not found, creates a new item
-  searchForUserData: function(params, callback) {
+  searchForUser: function(params, callback) {
     db.get({
       "TableName": config.DB_TABLE_USERS,
       "Key": {
@@ -43,7 +43,7 @@ module.exports = {
           data.NewUser = true;
           data.UserName = toTitleCase(params.inputText);
           console.log("No USER TABLE item found, creating a new item:", JSON.stringify(data, null, 2));
-          return self.createUserData(data, callback);
+          return self.createUser(data, callback);
         } else {
           console.log("USER TABLE item found:", JSON.stringify(data.Item, null, 2));
           return callback(null, data.Item);
@@ -53,7 +53,7 @@ module.exports = {
   },
 
   // updates an item in the USER TABLE
-  updateUserData: function(params, message, callback) {
+  updateUser: function(params, message, callback) {
     db.update(params, (err, data) => {
       if (err) {
         console.error("Error updating USER TABLE item. Error JSON:", JSON.stringify(err, null, 2));
