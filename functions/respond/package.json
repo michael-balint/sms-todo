@@ -12,6 +12,7 @@
     "async": "^2.0.0-rc.4",
     "aws-sdk": "^2.3.9",
     "lodash": "^4.11.2",
-    "plivo": "^0.3.3"
+    "plivo": "^0.3.3",
+    "watson-developer-cloud": "^1.5.0"
   }
 }

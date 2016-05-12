@@ -73,9 +73,7 @@ const handleMessage = (inputText, userData, callback) => {
       "Phone": userData.Phone
     },
     // UpdateExpression: "set UserName=:name",
-    // ExpressionAttributeValues: {
-    //   ":name":userData.name,
-    // },
+    ExpressionAttributeValues: {},
     ReturnValues:"UPDATED_NEW"
   };
 
@@ -85,14 +83,47 @@ const handleMessage = (inputText, userData, callback) => {
   // 3) edit task (Edit N)
   // 4) delete task (Delete N)
 
-  if (parsedInputText.search(/remind me/gi) >= 0) { // condition for lowercase 'remind'
-    parsedInputText.replace(/remind me/gi, "");
+  // todo commands
+  if (parsedInputText.search(/remind me to /gi) >= 0) {
+
+    // parsedInputText.replace(/remind me/gi, "");
     // TODO: add NLP to parse out the todo text
-    // save it to the DB (subject, qty, date/time, importance)
+    // save it to the DB (subject, qty, date, time, importance)
     // may have to ask the user for additional information if not provided
     // will require a nested check to remember the Reminder task
     // reference it to the cron job
-  } else if (parsedInputText.search(/edit /gi) >= 0) { // condition for lowercase 'edit'
+
+    let nlpText = {
+      text: inputText.replace(/remind /gi, "").toString()
+    };
+
+    // had to create a new DB table
+    // reference PHONE and DATE
+    // 
+    params.UpdateExpression = "set Todos.Taxonomy=:tax, Todos.TaxonomyScore=:tax_score, Todos.Keyword=:keyword, Todos.KeywordRelevance=:keyword_relevance, Todos.RelationsSentence=:relations_sentence, Todos.RelationsSubject=:relations_subject, Todos.RelationsAction=:relations_action, Todos.RelationsObject=:relations_object";
+    async.waterfall([
+      (next) => {
+        return alchemy.alchemyRelations(nlpText, params, next);
+      },
+      (params, next) => {
+        return alchemy.alchemyKeywords(nlpText, params, next);
+      },
+      (params, next) => {
+        return alchemy.alchemyTaxonomy(nlpText, params, next);
+      },
+      (params, next) => {
+        let message = "Got it. Task saved.";
+        console.log(params);
+        return userTable.updateUserData(params, message, callback);
+      }
+    ], (err) => {
+      return callback(err, response);
+    });
+
+  } else if (parsedInputText == 'list') {
+    // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
+    // Query and Scan the Data http://docs.aws.amazon.com/amazondynamodb/latest/gettingstartedguide/GettingStarted.NodeJs.04.html
+  } else if (parsedInputText.search(/edit /gi) >= 0) {
     let todoNumber = Number(parsedInputText.replace(/edit /gi, ""));
     // TODO: get list of all todoNumbers associated with user
     if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
