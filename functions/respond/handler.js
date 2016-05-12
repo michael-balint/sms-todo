@@ -7,7 +7,7 @@ const moment = require('moment');
 
 // local js libraries
 const sms = require('./lib/sms.js');
-const userTable = require('./lib/user-table.js');
+const userTable = require('./lib/user.js');
 const plivo = require('./lib/plivo.js');
 
 // load and set config files
@@ -27,7 +27,7 @@ module.exports.handler = (event, context, callback) => {
       }
 
       return plivo.sendMessage (messageParams, callback);
-      
+
     } else {
 
       console.log(event, config);
