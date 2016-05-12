@@ -57,6 +57,7 @@ function alchemyTaxonomy(nlpText, params, callback) {
 }
 
 module.exports = {
-  alchemyRelations: alchemyRelations
-  
+  alchemyRelations: alchemyRelations,
+  alchemyKeywords: alchemyKeywords,
+  alchemyTaxonomy: alchemyTaxonomy
 }

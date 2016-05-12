@@ -47,7 +47,7 @@ module.exports.handler = (event, context, callback) => {
           inputText: inputText
         };
 
-        return dynamo.searchForUser(params, next);
+        return dynamo.searchForItem(params, 'users', next);
 
       },
       (userData, next) => { // run through initialSetup or handleMessage

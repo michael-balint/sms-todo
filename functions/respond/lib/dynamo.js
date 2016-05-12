@@ -9,33 +9,45 @@ var db = new AWS.DynamoDB.DocumentClient();
 var config = require('../config.json');
 
 // creates a new item in the USER TABLE
-function createItem(params, config, callback) {
+function createItem(params, table, callback) {
+  
+  var tableName;
+  if (table == 'users') { tableName = config.DB_TABLE_USERS; }
+  else if (table == 'todos') { tableName = config.DB_TABLE_TODOS; }
+
   db.put({
-    "TableName": config.DB_TABLE_USERS,
+    "TableName": tableName,
     "Item": params
   }, (err, data) => {
     if (err) {
       console.error("Error initializing TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       console.log("TABLE item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
-      var params = { // need to review
-        phone: params.Phone
+      if (table == 'users') {
+        var params = { phone: params.Phone }
+        return searchForItem(params, callback);
+      } else {
+        return callback(null, 'Got it, task saved!');
       }
-      return searchForUser(params, callback); // required due to DynamoDB
     }
   });
 }
 
-// searches for an item in the USER TABLE, if not found, creates a new item
-function searchForItem(params, callback) {
+// searches for an ITEM in the TABLE, if not found, creates a new ITEM
+function searchForItem(params, table, callback) {
+  
+  var tableName;
+  if (table == 'users') { tableName = config.DB_TABLE_USERS; }
+  else if (table == 'todos') { tableName = config.DB_TABLE_TODOS; }
+
   db.get({
-    "TableName": config.DB_TABLE_USERS,
+    "TableName": tableName,
     "Key": {
       "Phone": params.phone
     }
   }, (err, data) => {
     if (err) {
-      console.error("USER TABLE GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
+      console.error("TABLE GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       if (!data.Item) { // checks to see if USER TABLE item exists
 
@@ -44,23 +56,24 @@ function searchForItem(params, callback) {
         data.Phone = params.phone;
         data.NewUser = true;
         data.UserName = toTitleCase(params.inputText);
-        console.log("No USER TABLE item found, creating a new item:", JSON.stringify(data, null, 2));
-        return createUser(data, callback);
+        console.log("No TABLE item found, creating a new item:", JSON.stringify(data, null, 2));
+        return createItem(data, 'users', callback);
       } else {
-        console.log("USER TABLE item found:", JSON.stringify(data.Item, null, 2));
+        console.log("TABLE item found:", JSON.stringify(data.Item, null, 2));
         return callback(null, data.Item);
       }
     }
   });
 }
 
-// updates an item in the USER TABLE
-function updateUser(params, message, callback) {
+// updates an ITEM in the TABLE
+function updateItem(params, message, callback) {
+
   db.update(params, (err, data) => {
     if (err) {
-      console.error("Error updating USER TABLE item. Error JSON:", JSON.stringify(err, null, 2));
+      console.error("Error updating TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
-      console.log("USER TABLE item updated successfully:", JSON.stringify(data, null, 2));
+      console.log("TABLE item updated successfully:", JSON.stringify(data, null, 2));
       return callback(null, message);
     }
   });
@@ -71,7 +84,7 @@ function toTitleCase(str) {
 }
 
 module.exports = {
-  createUser: createUser,
-  searchForUser: searchForUser,
-  updateUser: updateUser
+  createItem: createItem,
+  searchForItem: searchForItem,
+  updateItem: updateItem
 };
