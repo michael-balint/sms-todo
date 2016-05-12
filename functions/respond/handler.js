@@ -8,7 +8,6 @@ const moment = require('moment');
 // local js libraries
 const sms = require('./lib/sms.js');
 const dynamo = require('./lib/dynamo.js');
-const todo = require('./lib/todo.js');
 const plivo = require('./lib/plivo.js');
 
 // load and set config files

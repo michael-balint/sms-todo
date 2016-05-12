@@ -18,31 +18,19 @@ function createTodo(inputText, userData, callback) {
 
   // TODO: check if this todo exists?
 
-  var params = {
-    "TableName": config.DB_TABLE_TODOS,
-    "Key": {
-      "Phone": userData.Phone
-      // add in date
-    },
-    // UpdateExpression: "set UserName=:name",
-    ExpressionAttributeValues: {},
-    ReturnValues:"UPDATED_NEW"
-  };
-
   // TODO: add NLP to parse out the todo text
   // save it to the DB (subject, qty, date, time, importance)
   // may have to ask the user for additional information if not provided
   // will require a nested check to remember the Reminder task
   // reference it to the cron job
 
-  var nlpText = {
-    text: inputText.replace(/remind /gi, "").toString()
-  };
+  // remove 'Remind' as it messes up the NLP
+  var nlpText = { text: inputText.replace(/remind /gi, "").toString() };
 
-  // had to create a new DB table
-  // reference PHONE and DATE
-  // 
-  params.UpdateExpression = "set Todos.Taxonomy=:tax, Todos.TaxonomyScore=:tax_score, Todos.Keyword=:keyword, Todos.KeywordRelevance=:keyword_relevance, Todos.RelationsSentence=:relations_sentence, Todos.RelationsSubject=:relations_subject, Todos.RelationsAction=:relations_action, Todos.RelationsObject=:relations_object";
+  // initialize an empty params to pass to DB
+  var params = {};
+
+  // params.UpdateExpression = "set Todos.Taxonomy=:tax, Todos.TaxonomyScore=:tax_score, Todos.Keyword=:keyword, Todos.KeywordRelevance=:keyword_relevance, Todos.RelationsSentence=:relations_sentence, Todos.RelationsSubject=:relations_subject, Todos.RelationsAction=:relations_action, Todos.RelationsObject=:relations_object";
   async.waterfall([
     (next) => {
       return alchemy.alchemyRelations(nlpText, params, next);
@@ -54,9 +42,10 @@ function createTodo(inputText, userData, callback) {
       return alchemy.alchemyTaxonomy(nlpText, params, next);
     },
     (params, next) => {
+      params["Date"] = new Date();
       console.log(params);
       // TODO: needs to be updated
-      return dynamo.createItem(params, 'todos', callback);
+      // return dynamo.createItem(params, 'todos', callback);
     }
   ], (err) => {
     return callback(err, response);

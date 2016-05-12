@@ -15,12 +15,7 @@ function alchemyRelations(nlpText, params, callback) {
       console.log("Alchemy error:", err);
     } else {
       console.log(JSON.stringify(response.relations, null, 2));
-      var relations = response.relations;
-      console.log(params.ExpressionAttributeValues);
-      params.ExpressionAttributeValues[":relations_sentence"] = relations.sentence;
-      params.ExpressionAttributeValues[":relations_subject"] = relations.subject;
-      params.ExpressionAttributeValues[":relations_action"] = relations.action;
-      params.ExpressionAttributeValues[":relations_object"] = relations.object;
+      params["Relations"] = response.relations;
       return callback(null, params);
     }
   });
@@ -33,9 +28,7 @@ function alchemyKeywords(nlpText, params, callback) {
       console.log("Alchemy error:", err);
     } else {
       console.log(JSON.stringify(response.keywords, null, 2));
-      var keywords = response.keywords;
-      params.ExpressionAttributeValues[":keyword"] = keywords.text;
-      params.ExpressionAttributeValues[":keyword_relevance"] = parseFloat(keywords.relevance);
+      params["Keywords"] = response.keywords;
       return callback(null, params);
     }
   });
@@ -48,9 +41,7 @@ function alchemyTaxonomy(nlpText, params, callback) {
       console.log("Alchemy error:", err);
     } else {
       console.log(JSON.stringify(response.taxonomy, null, 2));
-      var taxonomy = response.taxonomy;
-      params.ExpressionAttributeValues[":tax"] = taxonomy.label;
-      params.ExpressionAttributeValues[":tax_score"] = parseFloat(taxonomy.score);
+      params["Taxonomy"] = response.taxonomy;
       return callback(null, params);
     }
   });

@@ -11,9 +11,9 @@ var config = require('../config.json');
 // creates a new item in the USER TABLE
 function createItem(params, table, callback) {
   
-  var dbItem = setDbParams(params, table, 'search');
+  var dbParams = setDbParams(params, table, 'create');
 
-  db.put(dbItem, (err, data) => {
+  db.put(dbParams, (err, data) => {
     if (err) {
       console.error("Error initializing TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
@@ -31,9 +31,9 @@ function createItem(params, table, callback) {
 // searches for an ITEM in the TABLE, if not found, creates a new ITEM
 function searchForItem(params, table, callback) {
   
-  var dbItem = setDbParams(params, table, 'search');
+  var dbParams = setDbParams(params, table, 'search');
 
-  db.get(dbItem, (err, data) => {
+  db.get(dbParams, (err, data) => {
     if (err) {
       console.error("TABLE GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
     } else {
