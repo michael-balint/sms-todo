@@ -21,7 +21,7 @@ function createTodo(params, callback) {
       return self.searchForTodo(params, callback); // required due to DynamoDB
     }
   });
-},
+}
 
 // searches for an item in the TODO TABLE, if not found, creates a new item
 function searchForTodo(params, callback) {
@@ -47,7 +47,7 @@ function searchForTodo(params, callback) {
       }
     }
   });
-},
+}
 
 // updates an item in the TODO TABLE (this also includes de-activating aka removing a todo)
 function updateTodo(params, message, callback) {

@@ -16,8 +16,6 @@ var config = require('../config.json');
 
 function createTodo(inputText, userData, callback) {
 
-  var parsedInputText = inputText.replace(/\+/g, " ").toString().toLowerCase();
-
   var params = {
     "TableName": config.DB_TABLE_TODOS,
     "Key": {
@@ -28,7 +26,6 @@ function createTodo(inputText, userData, callback) {
     ExpressionAttributeValues: {},
     ReturnValues:"UPDATED_NEW"
   };
-
 
   // TODO: add NLP to parse out the todo text
   // save it to the DB (subject, qty, date, time, importance)
@@ -67,8 +64,6 @@ function createTodo(inputText, userData, callback) {
 // handle all input conditions from user
 function listTodo(inputText, userData, callback) {
 
-  var parsedInputText = inputText.replace(/\+/g, " ").toString().toLowerCase();
-
   var params = {
     "TableName": config.DB_TABLE_TODOS,
     "Key": {
@@ -97,8 +92,6 @@ function listTodo(inputText, userData, callback) {
 
 // handle all input conditions from user
 function editTodo(inputText, userData, callback) {
-
-  var parsedInputText = inputText.replace(/\+/g, " ").toString().toLowerCase();
 
   var params = {
     "TableName": config.DB_TABLE_TODOS,
@@ -134,8 +127,6 @@ function editTodo(inputText, userData, callback) {
 
 function removeTodo(inputText, userData, callback) {
 
-  var parsedInputText = inputText.replace(/\+/g, " ").toString().toLowerCase();
-
   var params = {
     "TableName": config.DB_TABLE_TODOS,
     "Key": {
@@ -166,8 +157,6 @@ function removeTodo(inputText, userData, callback) {
 }
 
 function updateSettings(inputText, userData, callback) {
-
-  var parsedInputText = inputText.replace(/\+/g, " ");
 
   var params = {
     "TableName": config.DB_TABLE_USERS,
@@ -228,8 +217,6 @@ function updateSettings(inputText, userData, callback) {
 // handle all other input conditions from user
 function processMessage(inputText, userData, callback) {
 
-  var parsedInputText = inputText.replace(/\+/g, " ");
-
   // GENERAL COMMANDS
   switch(parsedInputText) {
 
@@ -249,8 +236,6 @@ function processMessage(inputText, userData, callback) {
 }
 
 function initialSetup(inputText, userData, callback) {
-
-  var parsedInputText = inputText.replace(/\+/g, " ");
 
   var params = {
     "TableName": config.DB_TABLE_USERS,
