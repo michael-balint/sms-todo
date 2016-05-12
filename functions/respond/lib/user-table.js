@@ -22,7 +22,7 @@ module.exports = {
         var params = {
           "phone": userData.Phone
         };
-        return searchForUserData(params, callback); // required due to DynamoDB
+        return self.searchForUserData(params, callback); // required due to DynamoDB
       }
     });
   },
@@ -43,7 +43,7 @@ module.exports = {
           data.NewUser = true;
           data.UserName = toTitleCase(params.inputText);
           console.log("No USER TABLE item found, creating a new item:", JSON.stringify(data, null, 2));
-          return initializeUserData(data, callback);
+          return self.initializeUserData(data, callback);
         } else {
           console.log("USER TABLE item found:", JSON.stringify(data.Item, null, 2));
           return callback(null, data.Item);
@@ -62,7 +62,8 @@ module.exports = {
         return callback(null, message);
       }
     });
-  },
+  }
+
 };
 
 function toTitleCase(str) {
