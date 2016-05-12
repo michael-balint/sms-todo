@@ -107,8 +107,8 @@ const handleMessage = (inputText, userData, callback) => {
     if (todoNumber === parseInt(data, 10)) {
       // delete todo
     }
-  } else if (parsedInputText.toLowerCase().search(/name /gi) >= 0) { // condition for lowercase 'name', does this conflict with 'setting' command
-    let name = toTitleCase(parsedInputText.toLowerCase().replace(/name /gi, ""));
+  } else if (parsedInputText.search(/name /gi) >= 0) { // update settings
+    let name = toTitleCase(parsedInputText.replace(/name /gi, ""));
     params.UpdateExpression = "set UserName=:name";
     params.ExpressionAttributeValues = {":name": name};
     let message = "Your name has been updated.";
@@ -136,15 +136,12 @@ const handleMessage = (inputText, userData, callback) => {
         return callback(null, "Oops, that's not a valid time format. Text the time in military format (e.g. Daily Reminder Time 09:30).");
       }
     }
-    updateUserData(params, message, callback);
+    userTable.updateUserData(params, message, callback);
   } else {
+    // general commands
     switch(parsedInputText) {
       case 'help':
-        return callback(null, "1) create a todo, text 'Remind me' and we'll get started 2) retrieve the list of all your todos, text 'list' 3) edit a todo, text 'Edit N' (where N is the todo number) 4) delete a todo, text 'Delete N' (where N is the todo number) 5) view your settings type 'settings'");
-        break;
-      case 'list':
-        // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
-        // Query and Scan the Data http://docs.aws.amazon.com/amazondynamodb/latest/gettingstartedguide/GettingStarted.NodeJs.04.html
+        return callback(null, "1) create a todo, start a text with 'Remind me to' 2) retrieve the list of all your todos, text 'list' 3) edit a todo, text 'Edit N' (where N is the todo number) 4) delete a todo, text 'Delete N' (where N is the todo number) 5) view your settings type 'settings'");
         break;
       case 'settings':
         let drt = userData.DailyReminderTime;
