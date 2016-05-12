@@ -11,14 +11,9 @@ var config = require('../config.json');
 // creates a new item in the USER TABLE
 function createItem(params, table, callback) {
   
-  var tableName;
-  if (table == 'users') { tableName = config.DB_TABLE_USERS; }
-  else if (table == 'todos') { tableName = config.DB_TABLE_TODOS; }
+  var dbItem = setDbParams(params, table, 'search');
 
-  db.put({
-    "TableName": tableName,
-    "Item": params
-  }, (err, data) => {
+  db.put(dbItem, (err, data) => {
     if (err) {
       console.error("Error initializing TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
@@ -36,16 +31,9 @@ function createItem(params, table, callback) {
 // searches for an ITEM in the TABLE, if not found, creates a new ITEM
 function searchForItem(params, table, callback) {
   
-  var tableName;
-  if (table == 'users') { tableName = config.DB_TABLE_USERS; }
-  else if (table == 'todos') { tableName = config.DB_TABLE_TODOS; }
+  var dbItem = setDbParams(params, table, 'search');
 
-  db.get({
-    "TableName": tableName,
-    "Key": {
-      "Phone": params.phone
-    }
-  }, (err, data) => {
+  db.get(dbItem, (err, data) => {
     if (err) {
       console.error("TABLE GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
     } else {
@@ -77,6 +65,40 @@ function updateItem(params, message, callback) {
       return callback(null, message);
     }
   });
+}
+
+// sets the DB params for GET and PUT
+function setDbParams(params, table, action) {
+
+  var dbItem = {};
+
+  if (table == 'users') { 
+
+    dbItem["TableName"] = config.DB_TABLE_USERS;
+
+    if (action == 'search') { 
+
+      dbItem["Key"] = {
+        "Phone": params.phone,
+        "Date": params.date
+      };
+    
+    } else if (action == 'create') { dbItem["Key"] = { "Item": params }; }
+
+  } else if (table == 'todos') {
+
+    dbItem["TableName"] = config.DB_TABLE_TODOS;
+
+    if (action == 'search') {
+
+      dbItem["Key"] = {
+        "Phone": params.phone
+      };
+    
+    } else if (action == 'create') { dbItem["Key"] = { "Item": params }; }
+  
+  }
+  return dbItem;
 }
 
 function toTitleCase(str) {
