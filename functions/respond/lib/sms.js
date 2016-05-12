@@ -115,7 +115,7 @@ function editTodo(inputText, userData, callback) {
     text: inputText.replace(/edit /gi, "").toString()
   };
 
-  var todoNumber = Number(parsedInputText.replace(/edit /gi, ""));
+  var todoNumber = Number(inputText.replace(/edit /gi, ""));
   // TODO: get list of all todoNumbers associated with user
   if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
     // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
@@ -149,7 +149,7 @@ function removeTodo(inputText, userData, callback) {
     text: inputText.replace(/delete /gi, "").toString()
   };
 
-  var todoNumber = Number(parsedInputText.replace(/delete /gi, ""));
+  var todoNumber = Number(inputText.replace(/delete /gi, ""));
   // TODO: get list of all todoNumbers associated with user
   if (todoNumber === parseInt(data, 10)) {
     // delete todo
@@ -168,9 +168,9 @@ function updateSettings(inputText, userData, callback) {
     ReturnValues:"UPDATED_NEW"
   };
 
-  if (parsedInputText.search(/name /gi) >= 0) { // update NAME
+  if (inputText.search(/name /gi) >= 0) { // update NAME
 
-    var name = toTitleCase(parsedInputText.replace(/name /gi, ""));
+    var name = toTitleCase(inputText.replace(/name /gi, ""));
     var message = "Your name has been updated.";
 
     params.UpdateExpression = "set UserName=:name";
@@ -178,9 +178,9 @@ function updateSettings(inputText, userData, callback) {
 
     userTable.updateUser(params, message, callback);
 
-  } else if (parsedInputText.search(/time zone /gi) >= 0) { // update TIME ZONE
+  } else if (inputText.search(/time zone /gi) >= 0) { // update TIME ZONE
 
-    var tz = parsedInputText.replace(/time zone /gi, "").toUpperCase();
+    var tz = inputText.replace(/time zone /gi, "").toUpperCase();
 
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
       return callback(null, "Oops, that's not an option. Text one of the four available timezones (ET, CT, MT, or PT) and try again.");
@@ -193,9 +193,9 @@ function updateSettings(inputText, userData, callback) {
       userTable.updateUser(params, message, callback);
     }
 
-  } else if (parsedInputText.search(/daily reminder time /gi) >= 0) { // update DAILY REMINDER TIME
+  } else if (inputText.search(/daily reminder time /gi) >= 0) { // update DAILY REMINDER TIME
 
-    var drt = parsedInputText.replace(/daily reminder time /gi, "");
+    var drt = inputText.replace(/daily reminder time /gi, "");
     var message = "Your daily reminder time has been updated.";
 
     params.UpdateExpression = "set DailyReminderTime=:drt";
@@ -218,7 +218,7 @@ function updateSettings(inputText, userData, callback) {
 function processMessage(inputText, userData, callback) {
 
   // GENERAL COMMANDS
-  switch(parsedInputText) {
+  switch(inputText) {
 
     case 'help':
       return callback(null, "1) create a todo, start a text with 'Remind me to' 2) retrieve the list of all your todos, text 'list' 3) edit a todo, text 'Edit N' (where N is the todo number) 4) delete a todo, text 'Delete N' (where N is the todo number) 5) view your settings type 'settings'");
@@ -249,7 +249,7 @@ function initialSetup(inputText, userData, callback) {
 
   if (!userData.UserTimeZone) {
 
-    var tz = parsedInputText.toUpperCase();
+    var tz = inputText.toUpperCase();
 
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
       return callback(null, 'Nice to meet you ' + userData.UserName + '! What timezone do you reside in (ET, CT, MT, or PT)?');
@@ -262,7 +262,7 @@ function initialSetup(inputText, userData, callback) {
 
   } else if (!userData.DailyReminderTime) {
 
-    var drt = parsedInputText.toLowerCase();
+    var drt = inputText.toLowerCase();
     var message = "Perfect, you're all set! I'm here to help you remember your daily todos. First things first, save my number! To get started, type 'help' to get a list of commands!";
 
     params.UpdateExpression = "set DailyReminderTime=:drt, NewUser=:nu";

@@ -56,19 +56,25 @@ module.exports.handler = (event, context, callback) => {
           return sms.initialSetup(inputText, userData, next);
         } else {
 
-          if (inputText.search(/remind me to /gi) >= 0) { // create todo
-            return sms.createTodo(parsedInputText, userData, next);
-          } else if (inputText.search(/list /gi) >= 0) { // list todos
-            return sms.listTodo(parsedInputText, userData, next);
-          } else if (inputText.search(/edit /gi) >= 0) { // edit todo
-            return sms.editTodo(parsedInputText, userData, next);
-          } else if (inputText.search(/delete /gi) >= 0) { // delete (remove) todo
-            return sms.removeTodo(parsedInputText, userData, next);
-          } else if (inputText.search(/name /gi) >= 0 || inputText.search(/time zone /gi) >= 0 || inputText.search(/daily reminder time /gi) >= 0) { // update settings
-            return sms.updateSettings(inputText, userData, next);
-          } else {
-            return sms.processMessage(inputText, userData, next);
-          }
+          // create todo
+          if (inputText.search(/remind me to /gi) >= 0) { return sms.createTodo(inputText, userData, next); }
+
+          // list todo
+          else if (inputText.search(/list /gi) >= 0) { return sms.listTodo(inputText, userData, next); }
+
+          // edit todo
+          else if (inputText.search(/edit /gi) >= 0) { return sms.editTodo(inputText, userData, next); }
+
+          // delete (remove) todo
+          else if (inputText.search(/delete /gi) >= 0) { return sms.removeTodo(inputText, userData, next); }
+          
+          // update settings
+          else if (inputText.search(/name /gi) >= 0 ||
+                      inputText.search(/time zone /gi) >= 0 ||
+                      inputText.search(/daily reminder time /gi) >= 0) { return sms.updateSettings(inputText, userData, next); }
+
+          // initial setup and other use cases
+          else { return sms.processMessage(inputText, userData, next); }
 
         }
       },
