@@ -3,16 +3,20 @@
 const _ = require('lodash');
 const async = require('async');
 const Plivo = require('plivo');
+const watson = require('watson-developer-cloud');
+const AWS = require('aws-sdk'); // possible comment out
 
-const AWS = require('aws-sdk');
-AWS.config.update({region:'us-east-1'});
+AWS.config.update({region:'us-east-1'}); // possible comment out
 
+const userTable = require('./user-table.js');
 const config = require('./config.json');
 const plivoCreds = require('./plivo-creds.json');
+const alchemyCreds = require('./alchemy-creds.json');
 
 const plivo = Plivo.RestAPI(plivoCreds);
+const alchemy = watson.alchemy_language(alchemyCreds);
 
-let db = new AWS.DynamoDB.DocumentClient();
+let db = new AWS.DynamoDB.DocumentClient(); // possible comment out
 
 // Serverless function
 module.exports.handler = (event, context, callback) => {
@@ -38,7 +42,7 @@ module.exports.handler = (event, context, callback) => {
           phone: userPhone,
           inputText: inputText
         };
-        return searchForUserData(params, next);
+        return userTable.searchForUserData(params, next);
       },
       (userData, next) => { // run through initialSetup or handleMessage
         if (userData.NewUser == true) {
@@ -61,64 +65,7 @@ module.exports.handler = (event, context, callback) => {
   }
 };
 
-// searches for an item in the DB, if not found, creates a new item
-const searchForUserData = (params, callback) => {
 
-  db.get({
-    "TableName": config.DB_TABLE_NAME,
-    "Key": {
-      "Phone": params.phone
-    }
-  }, (err, data) => {
-    if (err) {
-      console.error("DB GET call unsuccessful. Error JSON:", JSON.stringify(err, null, 2));
-    } else {
-      if (!data.Item) { // checks to see if DB item exists
-        data.Phone = params.phone;
-        data.NewUser = true;
-        data.UserName = toTitleCase(params.inputText);
-        data.Todos = {};
-        console.log("No DB item found, creating a new item:", JSON.stringify(data, null, 2));
-        return initializeUserData(data, callback);
-      } else {
-        console.log("DB item found:", JSON.stringify(data.Item, null, 2));
-        return callback(null, data.Item);
-      }
-    }
-  });
-
-};
-
-// creates a new item in the DB
-const initializeUserData = (userData, callback) => {
-  db.put({
-    "TableName": config.DB_TABLE_NAME,
-    "Item": userData
-  }, (err, data) => {
-    if (err) {
-      console.error("Error initializing DB item. Error JSON:", JSON.stringify(err, null, 2));
-    } else {
-      console.log("DB item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
-      let params = {
-        "phone": userData.Phone
-      };
-      return searchForUserData(params, callback); // required due to DynamoDB
-    }
-  });
-
-};
-
-// updates an item in the DB
-const updateUserData = (params, message, callback) => {
-  db.update(params, (err, data) => {
-    if (err) {
-      console.error("Error updating DB item. Error JSON:", JSON.stringify(err, null, 2));
-    } else {
-      console.log("DB item updated successfully:", JSON.stringify(data, null, 2));
-      return callback(null, message);
-    }
-  });
-};
 
 // handle all input conditions from user
 const handleMessage = (inputText, userData, callback) => {

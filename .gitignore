@@ -44,5 +44,6 @@ _meta
 
 plivo-creds.json
 config.json
+alchemy-creds.json
 
 functions/respond/node_modules/aws-sdk
