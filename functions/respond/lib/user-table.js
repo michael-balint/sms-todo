@@ -2,10 +2,10 @@
 // =============
 
 var AWS = require('aws-sdk');
-var db = new AWS.DynamoDB.DocumentClient();
 AWS.config.update({region:'us-east-1'});
+var db = new AWS.DynamoDB.DocumentClient();
 
-var config = require('./config.json');
+var config = require('../config.json');
 
 module.exports = {
 

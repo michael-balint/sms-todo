@@ -1,24 +1,19 @@
 'use strict';
 
+// npm modules
 const _ = require('lodash');
 const async = require('async');
-const Plivo = require('plivo');
-const watson = require('watson-developer-cloud');
-const AWS = require('aws-sdk'); // possible comment out
+const moment = require('moment');
 
-AWS.config.update({region:'us-east-1'}); // possible comment out
+// local js libraries
+const userTable = require('./lib/user-table.js');
+const alchemy = require('./lib/alchemy.js');
+const plivo = require('./lib/plivo.js');
 
-const userTable = require('./user-table.js');
+// load and set config files
 const config = require('./config.json');
-const plivoCreds = require('./plivo-creds.json');
-const alchemyCreds = require('./alchemy-creds.json');
 
-const plivo = Plivo.RestAPI(plivoCreds);
-const alchemy = watson.alchemy_language(alchemyCreds);
-
-let db = new AWS.DynamoDB.DocumentClient(); // possible comment out
-
-// Serverless function
+// Serverless function (GET)
 module.exports.handler = (event, context, callback) => {
 
   if (event.To.toString() !== config.PHONE) { // validates SMS parameters
@@ -28,7 +23,7 @@ module.exports.handler = (event, context, callback) => {
         'dst': event.To.toString(),
         'text': "Hello! My name is Woodhouse, welcome to my private beta. I'm here to help manage all your todos. To get started, I'm going to ask a few quick questions. What's your name?"
       }
-      return sendMessage (messageParams, callback);
+      return plivo.sendMessage (messageParams, callback);
     } else {
       console.log(event, config);
       return callback(new Error("Invalid input."));
@@ -57,7 +52,7 @@ module.exports.handler = (event, context, callback) => {
           'dst': userPhone,
           'text': messageText
         };
-        return sendMessage(messageParams, next);
+        return plivo.sendMessage(messageParams, next);
       }
     ], (err, response) => {
       return callback(err, response);
@@ -73,7 +68,7 @@ const handleMessage = (inputText, userData, callback) => {
   let parsedInputText = inputText.replace(/\+/g, " ").toString().toLowerCase();
 
   let params = {
-    "TableName": config.DB_TABLE_NAME,
+    "TableName": config.DB_TABLE_USERS,
     "Key": {
       "Phone": userData.Phone
     },
@@ -117,7 +112,7 @@ const handleMessage = (inputText, userData, callback) => {
     params.UpdateExpression = "set UserName=:name";
     params.ExpressionAttributeValues = {":name": name};
     let message = "Your name has been updated.";
-    updateUserData(params, message, callback);
+    userTable.updateUserData(params, message, callback);
   } else if (parsedInputText.search(/time zone /gi) >= 0) {
     let tz = parsedInputText.replace(/time zone /gi, "").toUpperCase();
     if (tz != 'ET' && tz != 'CT' && tz != 'MT' && tz != 'PT') {
@@ -126,7 +121,7 @@ const handleMessage = (inputText, userData, callback) => {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
       let message = "Your time zone has been updated.";
-      updateUserData(params, message, callback);
+      userTable.updateUserData(params, message, callback);
     }
   } else if (parsedInputText.search(/daily reminder time /gi) >= 0) {
     let drt = parsedInputText.replace(/daily reminder time /gi, "");
@@ -160,18 +155,6 @@ const handleMessage = (inputText, userData, callback) => {
         return callback(null, "Woodhouse is still pretty dumb, try typing 'help' to get a list of available options!");
     }
   }
-
-};
-
-const sendMessage = (params, callback) => {
-
-  plivo.send_message(params, (status, response) => {
-    if (status != 202 || status != 200) {
-      console.error("Plivo error: ", status);
-    }
-    return callback(null, JSON.stringify(response, null, 2));
-  });
-
 };
 
 // initial setup for new user
@@ -180,7 +163,7 @@ const initialSetup = (inputText, userData, callback) => {
   let parsedInputText = inputText.replace(/\+/g, " "); // may not be needed
 
   let params = {
-    "TableName": config.DB_TABLE_NAME,
+    "TableName": config.DB_TABLE_USERS,
     "Key": {
       "Phone": userData.Phone
     },
@@ -199,7 +182,7 @@ const initialSetup = (inputText, userData, callback) => {
       params.UpdateExpression = "set UserTimeZone=:tz";
       params.ExpressionAttributeValues = {":tz": tz};
       let message = "Fantastic! By default, I send a daily reminder of all your todos at 08:00. If you'd like me to remind you at a different time, please reply in military time (to keep the default, reply 'next' or to turn off the daily remember, reply 'disable')?";
-      updateUserData(params, message, callback);
+      userTable.updateUserData(params, message, callback);
     }
   } else if (!userData.DailyReminderTime) {
     let drt = parsedInputText.toLowerCase();
@@ -216,7 +199,7 @@ const initialSetup = (inputText, userData, callback) => {
     } else { // default reminder time
       params.ExpressionAttributeValues = {":drt": "08:00", ":nu": false};
     }
-    updateUserData(params, message, callback);
+    userTable.updateUserData(params, message, callback);
   }
 };
 
