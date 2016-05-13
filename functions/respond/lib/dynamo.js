@@ -9,29 +9,24 @@ var db = new AWS.DynamoDB.DocumentClient();
 var config = require('../config.json');
 
 // creates a new item in the USER TABLE
-function createItem(params, table, callback) {
+function createItem(params, callback) {
   
-  var dbParams = setDbParams(params, table, 'create');
+  var dbParams = setDBParams(params, 'create');
 
   db.put(dbParams, (err, data) => {
     if (err) {
       console.error("Error initializing TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       console.log("TABLE item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
-      if (table == 'users') {
-        var params = { phone: params.Phone }
-        return searchForItem(params, callback);
-      } else {
-        return callback(null, 'Got it, task saved!');
-      }
+      return searchForItem(params, 'users', callback);
     }
   });
 }
 
 // searches for an ITEM in the TABLE, if not found, creates a new ITEM
-function searchForItem(params, table, callback) {
+function searchForItem(params, callback) {
   
-  var dbParams = setDbParams(params, table, 'search');
+  var dbParams = setDBParams(params, 'search');
 
   db.get(dbParams, (err, data) => {
     if (err) {
@@ -41,11 +36,12 @@ function searchForItem(params, table, callback) {
 
         // TODO: check to see if the user was invited
 
-        data.Phone = params.phone;
+        data.Phone = params.Phone;
+        data.Todos = [];
         data.NewUser = true;
         data.UserName = toTitleCase(params.inputText);
         console.log("No TABLE item found, creating a new item:", JSON.stringify(data, null, 2));
-        return createItem(data, 'users', callback);
+        return createItem(data, callback);
       } else {
         console.log("TABLE item found:", JSON.stringify(data.Item, null, 2));
         return callback(null, data.Item);
@@ -68,36 +64,18 @@ function updateItem(params, message, callback) {
 }
 
 // sets the DB params for GET and PUT
-function setDbParams(params, table, action) {
+function setDBParams(params, action) { // removed table string
 
-  var dbItem = {};
+  var dbItem = {
+    "TableName": config.DB_TABLE_NAME
+  };
 
-  if (table == 'users') { 
+  // SEARCH function
+  if (action == 'search') { dbItem["Key"] = { "Phone": params.Phone }; }
 
-    dbItem["TableName"] = config.DB_TABLE_USERS;
+  // CREATE function
+  else if (action == 'create') { dbItem["Item"] = params; }
 
-    if (action == 'search') { 
-
-      dbItem["Key"] = {
-        "Phone": params.phone,
-        "Date": params.date
-      };
-    
-    } else if (action == 'create') { dbItem["Key"] = { "Item": params }; }
-
-  } else if (table == 'todos') {
-
-    dbItem["TableName"] = config.DB_TABLE_TODOS;
-
-    if (action == 'search') {
-
-      dbItem["Key"] = {
-        "Phone": params.phone
-      };
-    
-    } else if (action == 'create') { dbItem["Key"] = { "Item": params }; }
-  
-  }
   return dbItem;
 }
 

@@ -2,6 +2,7 @@
 // =============
 
 var async = require('async');
+var moment = require('moment');
 
 // local js libraries
 var dynamo = require('./dynamo.js');
@@ -27,8 +28,13 @@ function createTodo(inputText, userData, callback) {
   // remove 'Remind' as it messes up the NLP
   var nlpText = { text: inputText.replace(/remind /gi, "").toString() };
 
-  // initialize an empty params to pass to DB
-  var params = {};
+  var timestamp = moment().unix();
+  // initialize params object with ISO timestamp as an identifier
+  var params = {
+    "DateCreated": timestamp,
+    "Input": inputText
+  };
+  var message = "Roger, todo saved.";
 
   // params.UpdateExpression = "set Todos.Taxonomy=:tax, Todos.TaxonomyScore=:tax_score, Todos.Keyword=:keyword, Todos.KeywordRelevance=:keyword_relevance, Todos.RelationsSentence=:relations_sentence, Todos.RelationsSubject=:relations_subject, Todos.RelationsAction=:relations_action, Todos.RelationsObject=:relations_object";
   async.waterfall([
@@ -42,84 +48,99 @@ function createTodo(inputText, userData, callback) {
       return alchemy.alchemyTaxonomy(nlpText, params, next);
     },
     (params, next) => {
-      params["Date"] = new Date();
+      // TODO: add in DueDate
+      // - specific day/date and/or time
+      // - constant reminder (e.g. by Friday OR no date or time specified)
+      
+      // TODO: add in quantity
+
+      // setup TABLE update params
+      var createTodoDBParams = {
+        TableName: config.DB_TABLE_NAME,
+        Key:{
+          "Phone": userData.Phone
+        },
+        UpdateExpression: "SET Todos = list_append(Todos, :todo)",
+        ExpressionAttributeValues: {
+          ":todo": [params]
+        },
+        ReturnValues:"UPDATED_NEW"
+      };
+
       console.log(params);
-      // TODO: needs to be updated
-      // return dynamo.createItem(params, 'todos', callback);
+      return dynamo.updateItem(createTodoDBParams, message, callback);
     }
   ], (err) => {
     return callback(err, response);
   });
 }
 
-// handle all input conditions from user
 function listTodo(inputText, userData, callback) {
 
   var params = {
-    "TableName": config.DB_TABLE_TODOS,
-    "Key": {
-      "Phone": userData.Phone
-      // add in date
+    "TableName": config.DB_TABLE_NAME,
+    KeyConditionExpression: "#phone = :phone",
+    ExpressionAttributeNames: {
+      "#phone": "Phone"
     },
-    // UpdateExpression: "set UserName=:name",
-    ExpressionAttributeValues: {},
-    ReturnValues:"UPDATED_NEW"
+    ExpressionAttributeValues: {
+      ":phone": userData.Phone
+    }
   };
 
-
+  dynamo.queryDB(params, callback);
   // TODO: add NLP to parse out the todo text
   // save it to the DB (subject, qty, date, time, importance)
   // may have to ask the user for additional information if not provided
   // will require a nested check to remember the Reminder task
   // reference it to the cron job
 
-  var nlpText = {
-    text: inputText.replace(/list /gi, "").toString()
-  };
+  // var nlpText = {
+  //   text: inputText.replace(/list /gi, "").toString()
+  // };
 
   // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
   // Query and Scan the Data http://docs.aws.amazon.com/amazondynamodb/latest/gettingstartedguide/GettingStarted.NodeJs.04.html
 }
 
-// handle all input conditions from user
-function editTodo(inputText, userData, callback) {
+// function editTodo(inputText, userData, callback) {
 
-  var params = {
-    "TableName": config.DB_TABLE_TODOS,
-    "Key": {
-      "Phone": userData.Phone
-      // add in date
-    },
-    // UpdateExpression: "set UserName=:name",
-    ExpressionAttributeValues: {},
-    ReturnValues:"UPDATED_NEW"
-  };
+//   var params = {
+//     "TableName": config.DB_TABLE_TODOS,
+//     "Key": {
+//       "Phone": userData.Phone
+//       // add in date
+//     },
+//     // UpdateExpression: "set UserName=:name",
+//     ExpressionAttributeValues: {},
+//     ReturnValues:"UPDATED_NEW"
+//   };
 
 
-  // TODO: add NLP to parse out the todo text
-  // save it to the DB (subject, qty, date, time, importance)
-  // may have to ask the user for additional information if not provided
-  // will require a nested check to remember the Reminder task
-  // reference it to the cron job
+//   // TODO: add NLP to parse out the todo text
+//   // save it to the DB (subject, qty, date, time, importance)
+//   // may have to ask the user for additional information if not provided
+//   // will require a nested check to remember the Reminder task
+//   // reference it to the cron job
 
-  var nlpText = {
-    text: inputText.replace(/edit /gi, "").toString()
-  };
+//   var nlpText = {
+//     text: inputText.replace(/edit /gi, "").toString()
+//   };
 
-  var todoNumber = Number(inputText.replace(/edit /gi, ""));
-  // TODO: get list of all todoNumbers associated with user
-  if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
-    // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
-    // requires a nested check to remember the Edit task
-  } else {
-    return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
-  }
-}
+//   var todoNumber = Number(inputText.replace(/edit /gi, ""));
+//   // TODO: get list of all todoNumbers associated with user
+//   if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
+//     // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
+//     // requires a nested check to remember the Edit task
+//   } else {
+//     return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
+//   }
+// }
 
 function removeTodo(inputText, userData, callback) {
 
   var params = {
-    "TableName": config.DB_TABLE_TODOS,
+    "TableName": config.DB_TABLE_NAME,
     "Key": {
       "Phone": userData.Phone
       // add in date
@@ -150,7 +171,7 @@ function removeTodo(inputText, userData, callback) {
 function updateSettings(inputText, userData, callback) {
 
   var params = {
-    "TableName": config.DB_TABLE_USERS,
+    "TableName": config.DB_TABLE_NAME,
     "Key": {
       "Phone": userData.Phone
     },
@@ -229,7 +250,7 @@ function processMessage(inputText, userData, callback) {
 function initialSetup(inputText, userData, callback) {
 
   var params = {
-    "TableName": config.DB_TABLE_USERS,
+    "TableName": config.DB_TABLE_NAME,
     "Key": {
       "Phone": userData.Phone
     },
@@ -288,7 +309,7 @@ function validateTime(time) {
 module.exports = {
   createTodo: createTodo,
   listTodo: listTodo,
-  editTodo: editTodo,
+  // editTodo: editTodo,
   removeTodo: removeTodo,
   updateSettings: updateSettings,
   processMessage: processMessage,

@@ -41,7 +41,11 @@ function alchemyTaxonomy(nlpText, params, callback) {
       console.log("Alchemy error:", err);
     } else {
       console.log(JSON.stringify(response.taxonomy, null, 2));
-      params["Taxonomy"] = response.taxonomy;
+      var taxonomy = [];
+      for (var i = 0; i < response.taxonomy.length; i++) {
+        if (!response.taxonomy[i].confident) { taxonomy.push(response.taxonomy[i]); };
+      }
+      params["Taxonomy"] = taxonomy;
       return callback(null, params);
     }
   });

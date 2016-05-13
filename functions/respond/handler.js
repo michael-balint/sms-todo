@@ -3,7 +3,6 @@
 // npm modules
 const _ = require('lodash');
 const async = require('async');
-const moment = require('moment');
 
 // local js libraries
 const sms = require('./lib/sms.js');
@@ -42,11 +41,11 @@ module.exports.handler = (event, context, callback) => {
       (next) => { // locate the user or create a new one
 
         let params = {
-          phone: userPhone,
+          Phone: userPhone,
           inputText: inputText
         };
 
-        return dynamo.searchForItem(params, 'users', next);
+        return dynamo.searchForItem(params, next);
 
       },
       (userData, next) => { // run through initialSetup or handleMessage
