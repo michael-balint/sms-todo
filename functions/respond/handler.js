@@ -58,13 +58,13 @@ module.exports.handler = (event, context, callback) => {
           if (inputText.search(/remind me to /gi) >= 0) { return sms.createTodo(inputText, userData, next); }
 
           // LIST todo
-          else if (inputText.search(/list /gi) >= 0) { return sms.listTodo(inputText, userData, next); }
+          else if (inputText.search(/list/gi) >= 0) { return sms.listTodo(inputText, userData, next); }
 
           // EDIT todo
           else if (inputText.search(/edit /gi) >= 0) { return sms.editTodo(inputText, userData, next); }
 
-          // DELETE (remove) todo
-          else if (inputText.search(/delete /gi) >= 0) { return sms.removeTodo(inputText, userData, next); }
+          // DELETE todo
+          else if (inputText.search(/delete /gi) >= 0) { return sms.deleteTodo(inputText, userData, next); }
           
           // UPDATE settings
           else if (inputText.search(/name /gi) >= 0 ||

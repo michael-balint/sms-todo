@@ -18,22 +18,17 @@ var config = require('../config.json');
 function createTodo(inputText, userData, callback) {
 
   // TODO: check if this todo exists?
+  // TODO: parse quantity and date/time and frequency(?)
 
-  // TODO: add NLP to parse out the todo text
-  // save it to the DB (subject, qty, date, time, importance)
-  // may have to ask the user for additional information if not provided
-  // will require a nested check to remember the Reminder task
-  // reference it to the cron job
-
-  // remove 'Remind' as it messes up the NLP
+  // remove 'Remind' as it adds an extra Relations Extraction
   var nlpText = { text: inputText.replace(/remind /gi, "").toString() };
-
   var timestamp = moment().unix();
-  // initialize params object with ISO timestamp as an identifier
   var params = {
     "DateCreated": timestamp,
     "Input": inputText
   };
+
+  // TODO: add in randomized responses
   var message = "Roger, todo saved.";
 
   // params.UpdateExpression = "set Todos.Taxonomy=:tax, Todos.TaxonomyScore=:tax_score, Todos.Keyword=:keyword, Todos.KeywordRelevance=:keyword_relevance, Todos.RelationsSentence=:relations_sentence, Todos.RelationsSubject=:relations_subject, Todos.RelationsAction=:relations_action, Todos.RelationsObject=:relations_object";
@@ -137,19 +132,7 @@ function listTodo(inputText, userData, callback) {
 //   }
 // }
 
-function removeTodo(inputText, userData, callback) {
-
-  var params = {
-    "TableName": config.DB_TABLE_NAME,
-    "Key": {
-      "Phone": userData.Phone
-      // add in date
-    },
-    // UpdateExpression: "set UserName=:name",
-    ExpressionAttributeValues: {},
-    ReturnValues:"UPDATED_NEW"
-  };
-
+function deleteTodo(inputText, userData, callback) {
 
   // TODO: add NLP to parse out the todo text
   // save it to the DB (subject, qty, date, time, importance)
@@ -157,14 +140,33 @@ function removeTodo(inputText, userData, callback) {
   // will require a nested check to remember the Reminder task
   // reference it to the cron job
 
+  var todos = userData.Todos;
+  var todosCount = userData.Todos.length;
+
   var nlpText = {
     text: inputText.replace(/delete /gi, "").toString()
   };
 
   var todoNumber = Number(inputText.replace(/delete /gi, ""));
   // TODO: get list of all todoNumbers associated with user
-  if (todoNumber === parseInt(data, 10)) {
-    // delete todo
+  if (todoNumber === parseInt(todoNumber, 10) && 
+        todoNumber <= todosCount && 
+        todoNumber > 0) {
+    
+    // setup TABLE update params
+    var params = {
+      TableName: config.DB_TABLE_NAME,
+      Key:{
+        "Phone": userData.Phone
+      },
+      UpdateExpression: "REMOVE Todos[" + todoNumber + "]",
+      ReturnValues:"UPDATED_NEW"
+    };
+
+    return dynamo.deleteElement(params, callback);
+
+  } else {
+    return callback(null, "Invalid todo number.");
   }
 }
 
@@ -310,7 +312,7 @@ module.exports = {
   createTodo: createTodo,
   listTodo: listTodo,
   // editTodo: editTodo,
-  removeTodo: removeTodo,
+  deleteTodo: deleteTodo,
   updateSettings: updateSettings,
   processMessage: processMessage,
   initialSetup: initialSetup

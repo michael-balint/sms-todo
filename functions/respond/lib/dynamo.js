@@ -63,6 +63,18 @@ function updateItem(params, message, callback) {
   });
 }
 
+function deleteElement(params, callback){
+
+  db.update(params, (err, data) => {
+    if (err) {
+      console.error("Error deleting TABLE item ELEMENT. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+      console.log("TABLE item ELEMENT deleted successfully:", JSON.stringify(data, null, 2));
+      return callback(null, "Todo successfully deleted.");
+    }
+  });
+}
+
 // sets the DB params for GET and PUT
 function setDBParams(params, action) { // removed table string
 
@@ -86,5 +98,6 @@ function toTitleCase(str) {
 module.exports = {
   createItem: createItem,
   searchForItem: searchForItem,
-  updateItem: updateItem
+  updateItem: updateItem,
+  deleteElement: deleteElement
 };
