@@ -1,0 +1,16 @@
+{
+  "name": "scripts",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "send_daily_alerts": "node send_daily_alerts.js -d \"$(date +%s)\""
+  },
+  "author": "Michael Balint",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.0.0-rc.4",
+    "aws-sdk": "^2.3.11",
+    "commander": "^2.9.0",
+    "moment": "^2.13.0"
+  }
+}
