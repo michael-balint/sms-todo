@@ -62,7 +62,9 @@ function createTodo(inputText, userData, callback) {
         ReturnValues:"UPDATED_NEW"
       };
 
-      console.log(params);
+      params["Phone"] = userData.Phone;
+      dynamo.createItem(params, 'archive', null);
+
       return dynamo.updateItem(createTodoDBParams, message, callback);
     }
   ], (err) => {

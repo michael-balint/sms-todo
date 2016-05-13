@@ -9,16 +9,17 @@ var db = new AWS.DynamoDB.DocumentClient();
 var config = require('../config.json');
 
 // creates a new item in the USER TABLE
-function createItem(params, callback) {
+function createItem(params, dbType, callback) {
   
-  var dbParams = setDBParams(params, 'create');
+  var dbParams = setDBParams(params, dbType, 'create');
 
   db.put(dbParams, (err, data) => {
     if (err) {
       console.error("Error initializing TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       console.log("TABLE item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
-      return searchForItem(params, 'users', callback);
+      if (params.NewUser) { return searchForItem(params, 'users', callback); }
+      else { return null }
     }
   });
 }
@@ -26,7 +27,7 @@ function createItem(params, callback) {
 // searches for an ITEM in the TABLE, if not found, creates a new ITEM
 function searchForItem(params, callback) {
   
-  var dbParams = setDBParams(params, 'search');
+  var dbParams = setDBParams(params, 'prod', 'search');
 
   db.get(dbParams, (err, data) => {
     if (err) {
@@ -41,7 +42,7 @@ function searchForItem(params, callback) {
         data.NewUser = true;
         data.UserName = toTitleCase(params.inputText);
         console.log("No TABLE item found, creating a new item:", JSON.stringify(data, null, 2));
-        return createItem(data, callback);
+        return createItem(data, 'prod', callback);
       } else {
         console.log("TABLE item found:", JSON.stringify(data.Item, null, 2));
         return callback(null, data.Item);
@@ -76,11 +77,15 @@ function deleteElement(params, callback){
 }
 
 // sets the DB params for GET and PUT
-function setDBParams(params, action) { // removed table string
+function setDBParams(params, dbType, action) { // removed table string
 
-  var dbItem = {
-    "TableName": config.DB_TABLE_NAME
-  };
+  var dbItem = {};
+
+  // set prod DB
+  if (dbType == 'prod') { dbItem["TableName"] = config.DB_TABLE_NAME; }
+
+  // set archive DB
+  else if (dbType == 'archive') { dbItem["TableName"] = config.DB_TABLE_ARCHIVE };
 
   // SEARCH function
   if (action == 'search') { dbItem["Key"] = { "Phone": params.Phone }; }
