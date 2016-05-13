@@ -18,7 +18,7 @@ function createItem(params, dbType, callback) {
       console.error("Error initializing TABLE item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       console.log("TABLE item initialized successfully (DynamoDB bug, no data returned, requires calling searchForUserData again):", JSON.stringify(data, null, 2));
-      if (params.NewUser) { return searchForItem(params, 'users', callback); }
+      if (params.NewUser) { return searchForItem(params, callback); }
       else { return null }
     }
   });
