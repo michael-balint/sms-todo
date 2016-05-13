@@ -72,30 +72,15 @@ function createTodo(inputText, userData, callback) {
 
 function listTodo(inputText, userData, callback) {
 
-  var params = {
-    "TableName": config.DB_TABLE_NAME,
-    KeyConditionExpression: "#phone = :phone",
-    ExpressionAttributeNames: {
-      "#phone": "Phone"
-    },
-    ExpressionAttributeValues: {
-      ":phone": userData.Phone
-    }
-  };
-
-  dynamo.queryDB(params, callback);
-  // TODO: add NLP to parse out the todo text
-  // save it to the DB (subject, qty, date, time, importance)
-  // may have to ask the user for additional information if not provided
-  // will require a nested check to remember the Reminder task
-  // reference it to the cron job
-
-  // var nlpText = {
-  //   text: inputText.replace(/list /gi, "").toString()
-  // };
-
   // TODO: list all tasks (start with top 3) and then provide 'more' option to list more tasks
-  // Query and Scan the Data http://docs.aws.amazon.com/amazondynamodb/latest/gettingstartedguide/GettingStarted.NodeJs.04.html
+
+  var todos = userData.Todos;
+  var message = "Your todos are: ";
+  for (var i = 0; i < todos.length; i++) {
+    message = message + (i + 1) + ") " + todos[i].Input.replace(/remind me to /gi, "") + " ";
+  }
+
+  return callback(null, message);
 }
 
 // function editTodo(inputText, userData, callback) {
@@ -141,7 +126,7 @@ function deleteTodo(inputText, userData, callback) {
   // reference it to the cron job
 
   var todos = userData.Todos;
-  var todosCount = userData.Todos.length;
+  var todosCount = todos.length;
 
   var nlpText = {
     text: inputText.replace(/delete /gi, "").toString()
