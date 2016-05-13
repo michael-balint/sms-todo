@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "description": "",
   "scripts": {
-    "send_daily_alerts": "node send_daily_alerts.js -d \"$(date +%s)\""
+    "send_daily_alerts": "node send_daily_alerts.js -d \"$(date +%s)\"",
+    "send_explicit_alerts": "node send_explicit_alerts.js -d \"$(date +%s)\""
   },
   "author": "Michael Balint",
   "license": "ISC",
