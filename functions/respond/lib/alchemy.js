@@ -9,8 +9,8 @@ var alchemyCreds = require('../alchemy-creds.json');
 var alchemy_language = watson.alchemy_language(alchemyCreds);
 
 // Relations Extraction
-function alchemyRelations(nlpText, params, callback) {
-  alchemy_language.relations(nlpText, (err, response) => {
+function alchemyRelations(text, params, callback) {
+  alchemy_language.relations(text, (err, response) => {
     if (err) {
       console.log("Alchemy error:", err);
     } else {
@@ -22,8 +22,8 @@ function alchemyRelations(nlpText, params, callback) {
 }
 
 // Keyword / Terminology Extraction
-function alchemyKeywords(nlpText, params, callback) {
-  alchemy_language.keywords(nlpText, (err, response) => {
+function alchemyKeywords(text, params, callback) {
+  alchemy_language.keywords(text, (err, response) => {
     if (err) {
       console.log("Alchemy error:", err);
     } else {
@@ -35,8 +35,8 @@ function alchemyKeywords(nlpText, params, callback) {
 }
 
 // Taxonomy
-function alchemyTaxonomy(nlpText, params, callback) {
-  alchemy_language.taxonomy(nlpText, (err, response) => {
+function alchemyTaxonomy(text, params, callback) {
+  alchemy_language.taxonomy(text, (err, response) => {
     if (err) {
       console.log("Alchemy error:", err);
     } else {

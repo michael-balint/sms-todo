@@ -1,12 +1,12 @@
 // setup.js
 // =============
 
-var async = require('async');
 var moment = require('moment');
 
 // local js libraries
 var dynamo = require('./dynamo.js');
 var alchemy = require('./alchemy.js');
+var reminder = require('./reminder.js');
 var config = require('../config.json');
 
 // TODO: add in various conditions
@@ -21,55 +21,65 @@ function createTodo(inputText, userData, callback) {
   // TODO: parse quantity and date/time and frequency(?)
 
   // remove 'Remind' as it adds an extra Relations Extraction
-  var nlpText = { text: inputText.replace(/remind /gi, "").toString() };
-  var timestamp = moment().unix();
+  var trimmedText = { text: inputText.replace(/remind /gi, "").toString() };
+  var timestamp = moment().utc();
   var params = {
-    "DateCreated": timestamp,
+    "DateCreated": timestamp._d,
     "Input": inputText
   };
 
-  // TODO: add in randomized responses
-  var message = "Roger, todo saved.";
+  var reminderData = reminder.processReminder(inputText, userData, callback);
 
-  // params.UpdateExpression = "set Todos.Taxonomy=:tax, Todos.TaxonomyScore=:tax_score, Todos.Keyword=:keyword, Todos.KeywordRelevance=:keyword_relevance, Todos.RelationsSentence=:relations_sentence, Todos.RelationsSubject=:relations_subject, Todos.RelationsAction=:relations_action, Todos.RelationsObject=:relations_object";
-  async.waterfall([
-    (next) => {
-      return alchemy.alchemyRelations(nlpText, params, next);
-    },
-    (params, next) => {
-      return alchemy.alchemyKeywords(nlpText, params, next);
-    },
-    (params, next) => {
-      return alchemy.alchemyTaxonomy(nlpText, params, next);
-    },
-    (params, next) => {
-      // TODO: add in DueDate
-      // - specific day/date and/or time
-      // - constant reminder (e.g. by Friday OR no date or time specified)
+  if (reminderData == '') { // no reminder date or time specified/detected
+    var message = "Thanks! You'll be reminded each day until deleted.";
+  } else {
+    // TODO: add in randomized responses
+    var message = "Roger, todo saved."; // repeat it back to them (to verify)
+  }
+
+  console.log(message);
+  console.log(callback);
+
+  // CAN REMOVE AND JUST DO SERVER CALL
+  // async.waterfall([
+  //   (next) => {
+  //     return alchemy.alchemyRelations(trimmedText, params, next);
+  //   },
+  //   (params, next) => {
+  //     return alchemy.alchemyKeywords(trimmedText, params, next);
+  //   },
+  //   (params, next) => {
+  //     return alchemy.alchemyTaxonomy(trimmedText, params, next);
+  //   },
+  //   (params, next) => {
+  //     // TODO: add in DueDate
+  //     // - specific day/date and/or time
+  //     // - constant reminder (e.g. by Friday OR no date or time specified)
       
-      // TODO: add in quantity
+  //     // TODO: add in quantity
 
-      // setup TABLE update params
-      var createTodoDBParams = {
-        TableName: config.DB_TABLE_NAME,
-        Key:{
-          "Phone": userData.Phone
-        },
-        UpdateExpression: "SET Todos = list_append(Todos, :todo)",
-        ExpressionAttributeValues: {
-          ":todo": [params]
-        },
-        ReturnValues:"UPDATED_NEW"
-      };
+  //     // setup TABLE update params
+  //     var createTodoDBParams = {
+  //       TableName: config.DB_TABLE_NAME,
+  //       Key:{
+  //         "Phone": userData.Phone
+  //       },
+  //       UpdateExpression: "SET Todos = list_append(Todos, :todo)",
+  //       ExpressionAttributeValues: {
+  //         ":todo": [params]
+  //       },
+  //       ReturnValues:"UPDATED_NEW"
+  //     };
 
-      params["Phone"] = userData.Phone;
-      dynamo.createItem(params, 'archive', null);
+  //     params["Phone"] = userData.Phone;
+  //     dynamo.createItem(params, 'archive', null);
 
-      return dynamo.updateItem(createTodoDBParams, message, callback);
-    }
-  ], (err) => {
-    return callback(err, response);
-  });
+  //     return dynamo.updateItem(createTodoDBParams, message, callback);
+  //   }
+  // ], (err) => {
+  //   return callback(err, response);
+  // });
+  
 }
 
 function listTodo(inputText, userData, callback) {
@@ -85,39 +95,40 @@ function listTodo(inputText, userData, callback) {
   return callback(null, message);
 }
 
-// function editTodo(inputText, userData, callback) {
+// TODO: need to decide what to do with this
+function editTodo(inputText, userData, callback) {
 
-//   var params = {
-//     "TableName": config.DB_TABLE_TODOS,
-//     "Key": {
-//       "Phone": userData.Phone
-//       // add in date
-//     },
-//     // UpdateExpression: "set UserName=:name",
-//     ExpressionAttributeValues: {},
-//     ReturnValues:"UPDATED_NEW"
-//   };
+  var params = {
+    "TableName": config.DB_TABLE_TODOS,
+    "Key": {
+      "Phone": userData.Phone
+      // add in date
+    },
+    // UpdateExpression: "set UserName=:name",
+    ExpressionAttributeValues: {},
+    ReturnValues:"UPDATED_NEW"
+  };
 
 
-//   // TODO: add NLP to parse out the todo text
-//   // save it to the DB (subject, qty, date, time, importance)
-//   // may have to ask the user for additional information if not provided
-//   // will require a nested check to remember the Reminder task
-//   // reference it to the cron job
+  // TODO: add NLP to parse out the todo text
+  // save it to the DB (subject, qty, date, time, importance)
+  // may have to ask the user for additional information if not provided
+  // will require a nested check to remember the Reminder task
+  // reference it to the cron job
 
-//   var nlpText = {
-//     text: inputText.replace(/edit /gi, "").toString()
-//   };
+  var nlpText = {
+    text: inputText.replace(/edit /gi, "").toString()
+  };
 
-//   var todoNumber = Number(inputText.replace(/edit /gi, ""));
-//   // TODO: get list of all todoNumbers associated with user
-//   if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
-//     // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
-//     // requires a nested check to remember the Edit task
-//   } else {
-//     return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
-//   }
-// }
+  var todoNumber = Number(inputText.replace(/edit /gi, ""));
+  // TODO: get list of all todoNumbers associated with user
+  if (todoNumber === parseInt(data, 10)) { // add && condition to check if the todoNumber exists
+    // TODO: provide an option to change the various settings (subject, qty, date/time, importance)
+    // requires a nested check to remember the Edit task
+  } else {
+    return callback(null, "Oops! Looks like this todo either doesn't exist or you didn't enter a number. Try again and enter 'Edit N' (where N is an existing todo number).")
+  }
+}
 
 function deleteTodo(inputText, userData, callback) {
 
@@ -140,6 +151,8 @@ function deleteTodo(inputText, userData, callback) {
         todoNumber <= todosCount && 
         todoNumber > 0) {
     
+    todoNumber = todoNumber - 1;
+
     // setup TABLE update params
     var params = {
       TableName: config.DB_TABLE_NAME,
@@ -216,9 +229,7 @@ function updateSettings(inputText, userData, callback) {
 }
 
 // handle all other input conditions from user
-function processMessage(inputText, userData, callback) {
-
-  // GENERAL COMMANDS
+function processMessage(inputText, userData, callback) {  // GENERAL COMMANDS
   switch(inputText) {
 
     case 'help':
@@ -232,7 +243,7 @@ function processMessage(inputText, userData, callback) {
       break;
 
     default:
-      return callback(null, "Woodhouse is still pretty dumb, try typing 'help' to get a list of available options!");
+      return callback(null, "Woodhouse is still pretty dumb. Try typing 'help' to get a list of available options!");
   }
 }
 

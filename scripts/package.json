@@ -12,6 +12,7 @@
     "async": "^2.0.0-rc.4",
     "aws-sdk": "^2.3.11",
     "commander": "^2.9.0",
-    "moment": "^2.13.0"
+    "moment": "^2.13.0",
+    "moment-timezone": "^0.5.4"
   }
 }

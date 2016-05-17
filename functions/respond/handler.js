@@ -6,6 +6,7 @@ const async = require('async');
 
 // local js libraries
 const sms = require('./lib/sms.js');
+const reminder = require('./lib/reminder.js');
 const dynamo = require('./lib/dynamo.js');
 const plivo = require('./lib/plivo.js');
 
@@ -51,6 +52,20 @@ module.exports.handler = (event, context, callback) => {
       (userData, next) => { // run through initialSetup or handleMessage
 
         if (userData.NewUser == true) { return sms.initialSetup(inputText, userData, next); }
+
+        else if (userData.Step) { // multi-step sms conditions
+
+          switch(userData.Step) {
+
+            case 'request_time_of_day':
+              reminder.saveExplicitTimeOfDay(inputText, userData, next);
+              break;
+
+            case 'set_time_of_day':
+              // reminder.set
+              break;
+          }
+        }
 
         else {
 
