@@ -19,7 +19,8 @@ function processReminder(inputText, userData, callback) {
   var reminderData = [];
   var chronoDateParse;
 
-  chronoDateParse = chrono.parse(inputText);
+  chronoDateParse = chrono.parse(inputText, moment()._d, {forwardDatesOnly: true});
+  console.log(chronoDateParse);
 
   if (nlp.text(inputText).sentences.length > 1) { // multiple sentences?
     return callback(null, "Woodhouse is a bit slow still and can't process multiple sentences at this time. Try breaking it up into multiple todos!");
@@ -48,18 +49,34 @@ function processReminder(inputText, userData, callback) {
     else { return reminderData; }
 
   }
-  console.log(reminderData);
-  return reminderData;
 
-  console.log("===================");
-  console.log(chronoDateParse);
-  // console.log(chronoDateParse[0].start);
-  console.log(chronoDateParse[0].start.knownValues);
-  console.log(chronoDateParse[0].start.impliedValues);
-  console.log(chronoDateParse[0].start.date());
-  if (chronoDateParse[0].end) {
-    console.log(chronoDateParse[0].end.date());
+  // converts StartDate and EndDate to UNIX
+  if (reminderData.length > 1) {
+    for (var i = 0; i < reminderData.length; i++) {
+      if (reminderData[i]["EndDate"]) {
+        reminderData[i]["EndDate"] = moment.unix(reminderData[i]["EndDate"])._i;
+      }
+      reminderData[i]["StartDate"] = moment.unix(reminderData[i]["StartDate"])._i;
+    }
+  } else {
+    if (reminderData["EndDate"]) {
+      reminderData["EndDate"] = moment.unix(reminderData["EndDate"])._i;
+    }
+    reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
   }
+
+  return(reminderData);
+
+  // FOR TESTING
+  // console.log("===================");
+  // console.log(chronoDateParse);
+  // // console.log(chronoDateParse[0].start);
+  // console.log(chronoDateParse[0].start.knownValues);
+  // console.log(chronoDateParse[0].start.impliedValues);
+  // console.log(chronoDateParse[0].start.date());
+  // if (chronoDateParse[0].end) {
+  //   console.log(chronoDateParse[0].end.date());
+  // }
 }
 
 // TODO: expand this logic to identify the hour of the last muliple date occurence
@@ -209,8 +226,9 @@ function searchForQualifier(inputText, callback) {
 // parses out the hour, minute, and second for both the start and end date/times
 // as long as they are explicitly defined
 function parseChronoKnownTimeValues(chronoDateParse, callback) {
-  // chronoDateParse will be chronoDateParse[chronoDateParse.length-1] if multiple objects
+  // chronoDateParse will be chronoDateParse[n] if multiple objects
   // otherwise will be chronoDateParse[0]
+  // NOTE: currently makes the assumption no additional times will get specified in prior objects
 
   var startDate = chronoDateParse.start.knownValues;
   if (chronoDateParse.end) {

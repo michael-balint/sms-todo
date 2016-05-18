@@ -18,17 +18,14 @@ var config = require('../config.json');
 function createTodo(inputText, userData, callback) {
 
   // TODO: check if this todo exists?
-  // TODO: parse quantity and date/time and frequency(?)
 
-  // remove 'Remind' as it adds an extra Relations Extraction
-  var trimmedText = { text: inputText.replace(/remind /gi, "").toString() };
-  var timestamp = moment().utc();
-  var params = {
-    "DateCreated": timestamp._d,
-    "Input": inputText
-  };
+  var timestamp = moment().unix();
 
   var reminderData = reminder.processReminder(inputText, userData, callback);
+  reminderData["DateCreated"] = timestamp;
+  reminderData["Input"] = inputText;
+
+  console.log(reminderData);
 
   if (reminderData == '') { // no reminder date or time specified/detected
     var message = "Thanks! You'll be reminded each day until deleted.";
@@ -37,48 +34,23 @@ function createTodo(inputText, userData, callback) {
     var message = "Roger, todo saved."; // repeat it back to them (to verify)
   }
 
-  console.log(message);
-  console.log(callback);
+  // set Todo params
+  var createTodoParams = {
+    TableName: config.DB_TABLE_NAME,
+    Key:{
+      "Phone": userData.Phone
+    },
+    UpdateExpression: "SET Todos = list_append(Todos, :todo)",
+    ExpressionAttributeValues: {
+      ":todo": [reminderData]
+    },
+    ReturnValues:"UPDATED_NEW"
+  };
 
-  // CAN REMOVE AND JUST DO SERVER CALL
-  // async.waterfall([
-  //   (next) => {
-  //     return alchemy.alchemyRelations(trimmedText, params, next);
-  //   },
-  //   (params, next) => {
-  //     return alchemy.alchemyKeywords(trimmedText, params, next);
-  //   },
-  //   (params, next) => {
-  //     return alchemy.alchemyTaxonomy(trimmedText, params, next);
-  //   },
-  //   (params, next) => {
-  //     // TODO: add in DueDate
-  //     // - specific day/date and/or time
-  //     // - constant reminder (e.g. by Friday OR no date or time specified)
-      
-  //     // TODO: add in quantity
+  reminderData["Phone"] = userData.Phone;
+  dynamo.createItem(reminderData, 'archive', null);
 
-  //     // setup TABLE update params
-  //     var createTodoDBParams = {
-  //       TableName: config.DB_TABLE_NAME,
-  //       Key:{
-  //         "Phone": userData.Phone
-  //       },
-  //       UpdateExpression: "SET Todos = list_append(Todos, :todo)",
-  //       ExpressionAttributeValues: {
-  //         ":todo": [params]
-  //       },
-  //       ReturnValues:"UPDATED_NEW"
-  //     };
-
-  //     params["Phone"] = userData.Phone;
-  //     dynamo.createItem(params, 'archive', null);
-
-  //     return dynamo.updateItem(createTodoDBParams, message, callback);
-  //   }
-  // ], (err) => {
-  //   return callback(err, response);
-  // });
+  return dynamo.updateItem(createTodoParams, message, callback);
   
 }
 
