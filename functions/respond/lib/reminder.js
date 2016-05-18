@@ -6,6 +6,8 @@
 // Repeat = string
 // Persistent = boolean
 
+// npm modules
+var _ = require('lodash');
 var chrono = require('chrono-node');
 var nlp = require("nlp_compromise");
 var moment = require('moment');
@@ -43,11 +45,10 @@ function processReminder(inputText, userData, callback) {
         return setReminder(chronoDateParse, userData, 'single', qualifier, inputText, callback);
       }
 
-    } 
-    // remind them everyday (list empty) until deleted
-    else { 
-      // TODO: return Text and qualifier (forever)
-      // return reminderData; 
+    }
+    else { // remind them everyday (list empty) until deleted
+
+      return saveReminderDataToDB({}, userData, inputText, callback);
     }
 
   }
@@ -439,17 +440,19 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
 
   var timestamp = moment().unix();
 
-  reminderData["DateCreated"] = timestamp;
-  reminderData["Input"] = inputText;
-
   console.log(reminderData);
 
-  if (reminderData == '') { // no reminder date or time specified/detected
+  if (_.isEmpty(reminderData)) { // no reminder date or time specified/detected
     var message = "Thanks! You'll be reminded each day until deleted.";
   } else {
     // TODO: add in randomized responses
     var message = "Roger, todo saved."; // repeat it back to them (to verify)
   }
+
+  reminderData["DateCreated"] = timestamp;
+  reminderData["Input"] = inputText;
+
+  console.log(reminderData);
 
   // set Todo params
   var createTodoParams = {
