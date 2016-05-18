@@ -440,8 +440,6 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
 
   var timestamp = moment().unix();
 
-  console.log(reminderData);
-
   if (_.isEmpty(reminderData)) { // no reminder date or time specified/detected
     var message = "Thanks! You'll be reminded each day until deleted.";
   } else {
@@ -449,10 +447,16 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
     var message = "Roger, todo saved."; // repeat it back to them (to verify)
   }
 
-  reminderData["DateCreated"] = timestamp;
-  reminderData["Input"] = inputText;
-
-  console.log(reminderData);
+  // adds DateCreated and Input keys
+  if (reminderData.length > 1) {
+    for (var i = 0; i < reminderData.length; i++) {
+      reminderData[i]["DateCreated"] = timestamp;
+      reminderData[i]["Input"] = inputText;
+    }
+  } else {
+    reminderData["DateCreated"] = timestamp;
+    reminderData["Input"] = inputText;
+  }
 
   // set Todo params
   var createTodoParams = {
@@ -467,10 +471,18 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
     ReturnValues:"UPDATED_NEW"
   };
 
-  reminderData["Phone"] = userData.Phone;
-  dynamo.createItem(reminderData, 'archive', null);
+  // adds Phone key for archiving
+  if (reminderData.length > 1) {
+    for (var i = 0; i < reminderData.length; i++) {
+      reminderData[i]["Phone"] = userData.Phone;
+    }
+  } else {
+    reminderData["Phone"] = userData.Phone;
+  }
 
-  return dynamo.updateItem(createTodoParams, message, callback);
+  dynamo.createItem(reminderData, 'archive', null); // saves to archive DB
+
+  return dynamo.updateItem(createTodoParams, message, callback); // saves to user's todos, returns message
   
 }
 
