@@ -1,10 +1,10 @@
 // date_time.js
 // =============
 // reminderDate object key/value pairs
-// StartDate
-// StopDate
-// RepeatValue
-// RepeatFrequency
+// StartDate = UNIX time
+// EndDate = UNIX time
+// Repeat = string
+// Persistent = boolean
 
 var chrono = require('chrono-node');
 var nlp = require("nlp_compromise");
@@ -16,7 +16,6 @@ var config = require('../config.json');
 
 function processReminder(inputText, userData, callback) {
 
-  var reminderData = [];
   var chronoDateParse;
 
   chronoDateParse = chrono.parse(inputText, moment()._d, {forwardDatesOnly: true});
@@ -37,35 +36,21 @@ function processReminder(inputText, userData, callback) {
       if (chronoDateParse.length > 1) { // multiple dates found
 
         // TODO: need to detect AND or OR (OR is a much rarer case, visit later)
-        reminderData = setReminder(chronoDateParse, userData, 'multiple', qualifier, callback);
+        return setReminder(chronoDateParse, userData, 'multiple', qualifier, callback);
 
       } else { // single date
 
-        reminderData = setReminder(chronoDateParse, userData, 'single', qualifier, callback);
+        return setReminder(chronoDateParse, userData, 'single', qualifier, callback);
       }
 
     } 
     // remind them everyday (list empty) until deleted
-    else { return reminderData; }
+    else { 
+      // TODO: return Text and qualifier (forever)
+      // return reminderData; 
+    }
 
   }
-
-  // converts StartDate and EndDate to UNIX
-  if (reminderData.length > 1) {
-    for (var i = 0; i < reminderData.length; i++) {
-      if (reminderData[i]["EndDate"]) {
-        reminderData[i]["EndDate"] = moment.unix(reminderData[i]["EndDate"])._i;
-      }
-      reminderData[i]["StartDate"] = moment.unix(reminderData[i]["StartDate"])._i;
-    }
-  } else {
-    if (reminderData["EndDate"]) {
-      reminderData["EndDate"] = moment.unix(reminderData["EndDate"])._i;
-    }
-    reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
-  }
-
-  return(reminderData);
 
   // FOR TESTING
   // console.log("===================");
@@ -77,6 +62,46 @@ function processReminder(inputText, userData, callback) {
   // if (chronoDateParse[0].end) {
   //   console.log(chronoDateParse[0].end.date());
   // }
+}
+
+// finds the prior word to identify time qualifier
+// NOTE doesn't handle multiple subject / date combos
+function searchForQualifier(inputText, callback) {
+  // if word prior to DATE tag is a PREPOSITION tag and is by, constant reminder
+  var terms = nlp.text(inputText).terms();
+  console.log(terms);
+  for (var i = 0; i < terms.length; i++) { // if PREP is before DATE, take action
+    if (terms[i].tag == "Date") {
+
+      switch(terms[i-1].tag) {
+
+        case 'Preposition': // looking for BY
+          if (terms[i-1].text == "by") {
+            return "persistent";
+          } else if (terms[i-1].text == "until") {
+            return "repeat";
+          } else {
+            return null;
+          }
+
+        case 'Determiner': // looking for EVERY (how to handle multiple EVERYS?)
+          if (terms[i-1].text == "every") {
+            return "repeat";
+          } else {
+            return null;
+          }
+
+        case 'Adjective': // looking for EVERY OTHER (next iteration)
+          if (terms[i-1].text == "other") {
+            if (terms[i-2].text == "every") {
+              return "alternating";
+            }
+          } else {
+            return null;
+          }
+      }
+    }
+  }
 }
 
 // TODO: expand this logic to identify the hour of the last muliple date occurence
@@ -96,11 +121,10 @@ function setReminder(chronoDateParse, userData, dateType, qualifier, callback) {
       default: // likely on or this
 
         if (parsedKnownTime == undefined) { // no time specified
-          requestExplicitTimeOfDay(chronoDateParse, userData, callback);
+          return requestExplicitTimeOfDay(chronoDateParse, userData, callback);
         }
         else { // START and END time
-          reminderData = mergeDateAndTime(chronoDateParse, parsedKnownTime, callback);
-          return reminderData;
+          return mergeDateAndTime(chronoDateParse, parsedKnownTime, callback);
         }
 
     }
@@ -108,118 +132,7 @@ function setReminder(chronoDateParse, userData, dateType, qualifier, callback) {
   } else { // single day parsed by chrono
 
     // creates reminderData (and optional keys) based on qualifier
-    reminderData = setSingleDateReminderData(chronoDateParse, userData, qualifier, callback);
-    return reminderData;
-
-  }
-}
-
-// texts user for a specific time of day when setting the reminderTime
-function requestExplicitTimeOfDay(chronoDateParse, userData, callback) {
-  // need to create a placeholder variable to know to pick up here on response
-  // Step = time_of_day
-  var message = "I noticed you didn't set a time for this todo. What time would you like to be reminded (e.g. 10AM, 5PM, 2 to 3PM)? Or reply 'no' if you don't want to set a specific time.";
-  var params = {
-    "TableName": config.DB_TABLE_NAME,
-    "Key": {
-      "Phone": userData.Phone
-    },
-    UpdateExpression: "set TempData=:tempData, Step=:step",
-    ExpressionAttributeValues: {
-      ":tempData": chronoDateParse,
-      ":step": "request_time_of_day"
-    },
-    ReturnValues:"UPDATED_NEW"
-  };
-  console.log(message);
-  // dynamo.updateItem(params, message, callback);
-  return null;
-}
-
-// TODOS in this FUNCTION
-// called by handler if UserData.Step = "time_of_day"
-// associates a time with a specified day
-function saveExplicitTimeOfDay(inputText, UserData, callback) {
-  console.log(UserData.TempData);
-  console.log(UserData.Step);
-
-  var chronoDateParse = UserData.TempData, message;
-
-  if (inputText == 'no') {
-    message = "Thanks! This will be included in your daily reminder only.";
-
-    // figure out a way to return a value that signifies no time of day specified
-  } else {
-
-    // TODO: check if times can be determined from Chrono
-
-    message = "Thanks! I'll set the reminder date and time accordingly.";
-
-    // associate a time, handles multiple reminder days
-    for (var i = 0; i < chronoDateParse.length; i++) {
-      console.log(chronoDateParse[i]);
-      // add knownValues time (using inputText)
-      // remove ImpliedValues time
-      // save to chronoDateParse
-
-      // TODO: add in conditions for multiple days, possibly leverage existing functions
-    }
-
-  }
-
-  // update TempData and Step
-  var params = {
-    "TableName": config.DB_TABLE_NAME,
-    "Key": {
-      "Phone": userData.Phone
-    },
-    UpdateExpression: "set TempData=:tempData, Step=:step",
-    ExpressionAttributeValues: {
-      ":tempData": chronoDateParse,
-      ":step": "set_time_of_day"
-    },
-    ReturnValues:"UPDATED_NEW"
-  };
-  console.log(message);
-  // dynamo.updateItem(params, message, callback);
-}
-
-function searchForQualifier(inputText, callback) {
-  // if word prior to DATE tag is a PREPOSITION tag and is by, constant reminder
-  var terms = nlp.text(inputText).terms();
-  console.log(terms);
-  for (var i = 0; i < terms.length; i++) { // if PREP is before DATE, take action
-    if (terms[i].tag == "Date") {
-
-      switch(terms[i-1].tag) {
-
-        case 'Preposition': // looking for BY
-          if (terms[i-1].text == "by") {
-            return "persistent";
-          } else {
-            return null;
-          }
-          break;
-
-        case 'Determiner': // looking for EVERY (how to handle multiple EVERYS?)
-          if (terms[i-1].text == "every") {
-            return "repeat";
-          } else {
-            return null;
-          }
-          break;
-
-        case("Adjective"): // looking for EVERY OTHER (next iteration)
-          if (terms[i-1].text == "other") {
-            if (terms[i-2].text == "every") {
-              return "alternating";
-            }
-          } else {
-            return null;
-          }
-          break;
-      }
-    }
+    return setSingleDateReminderData(chronoDateParse, userData, qualifier, callback);
   }
 }
 
@@ -264,7 +177,7 @@ function mergeDateAndTime(chronoDateParse, parsedKnownTime, callback){
   // chronoDateParse[i] >> counts through the various identified ParsedResults
   // parsedKnownTime[0] (START time), parsedKnownTime[1] (STOP time)
 
-  var reminderTime = [];
+  var reminderData = [];
   var startDate = [];
   var endDate = [];
 
@@ -283,20 +196,20 @@ function mergeDateAndTime(chronoDateParse, parsedKnownTime, callback){
       }
     }
 
-    reminderTime[i] = {
+    reminderData[i] = {
       "StartDate": moment([ 
-          startDate[i]["year"],
-          startDate[i]["month"]-1, // bug-ish
-          startDate[i]["day"],
-          startDate[i]["hour"],
-          startDate[i]["minute"],
-          startDate[i]["second"]
+        startDate[i]["year"],
+        startDate[i]["month"]-1, // bug-ish
+        startDate[i]["day"],
+        startDate[i]["hour"],
+        startDate[i]["minute"],
+        startDate[i]["second"]
       ])._d
     };
 
     // checks if an EndDate needs to be saved
     if (parsedKnownTime[1]) {
-      reminderTime[i]["EndDate"] = moment([ 
+      reminderData[i]["EndDate"] = moment([ 
         endDate[i]["year"],
         endDate[i]["month"]-1, // bug-ish
         endDate[i]["day"],
@@ -307,7 +220,23 @@ function mergeDateAndTime(chronoDateParse, parsedKnownTime, callback){
     }
   }
 
-  return reminderTime;
+  // convert to UNIX time
+  if (reminderData.length > 1) {
+    for (var i = 0; i < reminderData.length; i++) {
+      if (reminderData[i]["EndDate"]) {
+        reminderData[i]["EndDate"] = moment.unix(reminderData[i]["EndDate"])._i;
+      }
+      reminderData[i]["StartDate"] = moment.unix(reminderData[i]["StartDate"])._i;
+    }
+  } else {
+    if (reminderData["EndDate"]) {
+      reminderData["EndDate"] = moment.unix(reminderData["EndDate"])._i;
+    }
+    reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
+  }
+
+  console.log(reminderData);
+  return reminderData;
 }
 
 function setDateAndTimeValues(chronoDateParse, parsedKnownTime, callback) {
@@ -379,37 +308,165 @@ function setSingleDateReminderData(chronoDateParse, userData, qualifier, callbac
 
     reminderData = {
       "StartDate": chronoDateParse[0].start.date(), 
-      "StopDate": chronoDateParse[0].end.date()
+      "EndDate": chronoDateParse[0].end.date()
     };
+
+    // convert to UNIX
+    reminderData["EndDate"] = moment.unix(reminderData["EndDate"])._i;
+    reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
+
+    // identify and add qualifier to reminderData
     switch(qualifier) {
       case 'persistent':
         reminderData["Persistent"] = true;
+        break;
       case 'repeat':
         reminderData["Repeat"] = "weekly";
+        break;
       case 'alternating':
         reminderData["Repeat"] = "bi-weekly";
+        break;
     }
-    return reminderData;
+
+    // save to DB
+    return saveReminderDataToDB(reminderData, userData, callback);
 
   } else { // no time range specified
 
     if (chronoDateParse[0].start.impliedValues.hasOwnProperty("hour")) { // no time specified
-      requestExplicitTimeOfDay(chronoDateParse, userData, callback);
+      
+      return requestExplicitTimeOfDay(chronoDateParse, userData, callback);
 
     } else { // time specified
 
       reminderData = { "StartDate": chronoDateParse[0].start.date() };
+
+      // convert to UNIX
+      reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
+
+      // identify and add qualifier to reminderData
       switch(qualifier) {
         case 'persistent':
           reminderData["Persistent"] = true;
+          break;
         case 'repeat':
           reminderData["Repeat"] = "weekly";
+          break;
         case 'alternating':
           reminderData["Repeat"] = "bi-weekly";
+          break;
       }
-      return reminderData;
+
+      // save to DB
+      return saveReminderDataToDB(reminderData, userData, callback);
     }
   }
+
+  // save to DB
+}
+
+// texts user for a specific time of day when setting the reminderTime
+function requestExplicitTimeOfDay(chronoDateParse, userData, callback) {
+  // need to create a placeholder variable to know to pick up here on response
+  // Step = time_of_day
+  var message = "I noticed you didn't set a time for this todo. What time would you like to be reminded (e.g. 10AM, 5PM, 2 to 3PM)? Or reply 'no' if you don't want to set a specific time.";
+  var params = {
+    "TableName": config.DB_TABLE_NAME,
+    "Key": {
+      "Phone": userData.Phone
+    },
+    UpdateExpression: "set TempData=:tempData, Step=:step",
+    ExpressionAttributeValues: {
+      ":tempData": chronoDateParse,
+      ":step": "request_time_of_day"
+    },
+    ReturnValues:"UPDATED_NEW"
+  };
+
+  dynamo.updateItem(params, message, callback);
+  return callback;
+}
+
+// TODOS in this FUNCTION
+// called by handler if UserData.Step = "time_of_day"
+// associates a time with a specified day
+function saveExplicitTimeOfDay(inputText, UserData, callback) {
+  console.log(UserData.TempData);
+  console.log(UserData.Step);
+
+  var chronoDateParse = UserData.TempData, message;
+
+  if (inputText == 'no') {
+    message = "Got it. This will be included in your daily reminder only.";
+
+    // figure out a way to return a value that signifies no time of day specified
+  } else {
+
+    // TODO: check if times can be determined from Chrono
+
+    message = "Thanks! I'll set the reminder date and time accordingly.";
+
+    // associate a time, handles multiple reminder days
+    for (var i = 0; i < chronoDateParse.length; i++) {
+      console.log(chronoDateParse[i]);
+      // add knownValues time (using inputText)
+      // remove ImpliedValues time
+      // save to chronoDateParse
+
+      // TODO: add in conditions for multiple days, possibly leverage existing functions
+    }
+
+  }
+
+  // update TempData and Step
+  var params = {
+    "TableName": config.DB_TABLE_NAME,
+    "Key": {
+      "Phone": userData.Phone
+    },
+    UpdateExpression: "set TempData=:tempData, Step=:step",
+    ExpressionAttributeValues: {
+      ":tempData": chronoDateParse,
+      ":step": "set_time_of_day"
+    },
+    ReturnValues:"UPDATED_NEW"
+  };
+  console.log(message);
+  // dynamo.updateItem(params, message, callback);
+}
+
+function saveReminderDataToDB(reminderData, userData, callback) {
+
+  reminderData["DateCreated"] = timestamp;
+  reminderData["Input"] = inputText;
+
+  console.log(reminderData);
+
+  if (reminderData == '') { // no reminder date or time specified/detected
+    var message = "Thanks! You'll be reminded each day until deleted.";
+  } else {
+    // TODO: add in randomized responses
+    var message = "Roger, todo saved."; // repeat it back to them (to verify)
+  }
+
+  // set Todo params
+  var createTodoParams = {
+    TableName: config.DB_TABLE_NAME,
+    Key:{
+      "Phone": userData.Phone
+    },
+    UpdateExpression: "SET Todos = list_append(Todos, :todo)",
+    ExpressionAttributeValues: {
+      ":todo": [reminderData]
+    },
+    ReturnValues:"UPDATED_NEW"
+  };
+
+  reminderData["Phone"] = userData.Phone;
+  dynamo.createItem(reminderData, 'archive', null);
+
+  return dynamo.updateItem(createTodoParams, message, callback);
+  
 }
 
 module.exports = {

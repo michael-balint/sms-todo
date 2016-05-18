@@ -19,39 +19,10 @@ function createTodo(inputText, userData, callback) {
 
   // TODO: check if this todo exists?
 
-  var timestamp = moment().unix();
 
-  var reminderData = reminder.processReminder(inputText, userData, callback);
-  reminderData["DateCreated"] = timestamp;
-  reminderData["Input"] = inputText;
+  return reminder.processReminder(inputText, userData, callback);
+  // var reminderData = reminder.processReminder(inputText, userData, callback);
 
-  console.log(reminderData);
-
-  if (reminderData == '') { // no reminder date or time specified/detected
-    var message = "Thanks! You'll be reminded each day until deleted.";
-  } else {
-    // TODO: add in randomized responses
-    var message = "Roger, todo saved."; // repeat it back to them (to verify)
-  }
-
-  // set Todo params
-  var createTodoParams = {
-    TableName: config.DB_TABLE_NAME,
-    Key:{
-      "Phone": userData.Phone
-    },
-    UpdateExpression: "SET Todos = list_append(Todos, :todo)",
-    ExpressionAttributeValues: {
-      ":todo": [reminderData]
-    },
-    ReturnValues:"UPDATED_NEW"
-  };
-
-  reminderData["Phone"] = userData.Phone;
-  dynamo.createItem(reminderData, 'archive', null);
-
-  return dynamo.updateItem(createTodoParams, message, callback);
-  
 }
 
 function listTodo(inputText, userData, callback) {

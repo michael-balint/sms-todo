@@ -53,7 +53,7 @@ module.exports.handler = (event, context, callback) => {
 
         if (userData.NewUser == true) { return sms.initialSetup(inputText, userData, next); }
 
-        else if (userData.Step) { // multi-step sms conditions
+        else if (userData.Step != "none") { // multi-step sms conditions
 
           switch(userData.Step) {
 
