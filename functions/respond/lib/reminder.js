@@ -505,6 +505,8 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
     "Todo": reminderData
   };
 
+  dynamo.createItem(archiveParams, 'archive', null); // saves to archive DB
+
   // adds DateCreated and Input keys for todoParams
   reminderData["DateCreated"] = timestamp;
   reminderData["Input"] = inputText;
@@ -521,8 +523,6 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
     },
     ReturnValues:"UPDATED_NEW"
   };
-
-  dynamo.createItem(archiveParams, 'archive', null); // saves to archive DB
 
   return dynamo.updateItem(todoParams, message, callback); // saves to user's todos, returns message
   
