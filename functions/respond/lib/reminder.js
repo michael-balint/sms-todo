@@ -26,7 +26,9 @@ function processReminder(inputText, userData, callback) {
   if (nlp.text(inputText).sentences.length > 1) { // multiple sentences?
     return callback(null, "Woodhouse is a bit slow still and can't process multiple sentences at this time. Try breaking it up into multiple todos!");
 
-    // } else if (TODO: check for multiple subjects w/ dates) {
+    // } else if (TODO: check for multiple NOUNS) {
+      // TODO: add in a check for multiple NOUNS and return stupid
+      // have to remove 'remind me' first since me returns as a NOUN
 
   } else { // single subject workflow
 
@@ -37,7 +39,7 @@ function processReminder(inputText, userData, callback) {
 
       if (chronoDateParse.length > 1) { // multiple dates found
 
-        // TODO: need to detect AND or OR (OR is a much rarer case, visit later)
+        // TODO: need to detect AND or OR between DATES (OR is a much rarer case, visit later)
         return setReminder(chronoDateParse, userData, 'multiple', qualifier, inputText, callback);
 
       } else { // single date
@@ -111,24 +113,26 @@ function setReminder(chronoDateParse, userData, dateType, qualifier, inputText, 
   var reminderData = [];
   if (dateType == 'multiple') { // multiple days parsed by chrono
 
-    // TODO: take last object's (day's) time range to be applied to the prior days
-    var parsedKnownTime = parseChronoKnownTimeValues(chronoDateParse[chronoDateParse.length-1], callback);
+    return setMultipleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback);
 
-    switch(qualifier) {
-      case 'repeat': // TODO: still need to figure out how to manage repeat
-        console.log('create constant, multiple days/week reminders');
-        break;
+    // // TODO: take last object's (day's) time range to be applied to the prior days
+    // var parsedKnownTime = parseChronoKnownTimeValues(chronoDateParse[chronoDateParse.length-1], callback);
 
-      default: // likely on or this
+    // switch(qualifier) {
+    //   case 'repeat': // TODO: still need to figure out how to manage repeat
+    //     console.log('create constant, multiple days/week reminders');
+    //     break;
 
-        if (parsedKnownTime == undefined) { // no time specified
-          return requestExplicitTimeOfDay(chronoDateParse, userData, callback);
-        }
-        else { // START and END time
-          return mergeDateAndTime(chronoDateParse, parsedKnownTime, callback);
-        }
+    //   default: // likely on or this
 
-    }
+    //     if (parsedKnownTime == undefined) { // no time specified
+    //       return requestExplicitTimeOfDay(chronoDateParse, userData, callback);
+    //     }
+    //     else { // START and END time
+    //       return mergeDateAndTime(chronoDateParse, parsedKnownTime, callback);
+    //     }
+
+    // }
 
   } else { // single day parsed by chrono
 
@@ -137,40 +141,116 @@ function setReminder(chronoDateParse, userData, dateType, qualifier, inputText, 
   }
 }
 
-// parses out the hour, minute, and second for both the start and end date/times
+function setSingleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback) {
+
+  var reminderData = [];
+
+  if (chronoDateParse[0].end) { // has a time range
+
+    reminderData = {
+      "StartDate": chronoDateParse[0].start.date(), 
+      "EndDate": chronoDateParse[0].end.date()
+    };
+
+    // convert to UNIX
+    reminderData["EndDate"] = moment.unix(reminderData["EndDate"])._i;
+    reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
+
+    // identify and add qualifier to reminderData
+    reminderData = addQualifierToReminderData(reminderData, qualifier, callback);
+
+    return saveReminderDataToDB(reminderData, userData, inputText, callback); // save to DB
+
+  } else { // no time range specified
+
+    if (chronoDateParse[0].start.impliedValues.hasOwnProperty("hour")) { // no time specified
+      
+      return requestExplicitTimeOfDay(chronoDateParse, userData, qualifier, callback);
+
+    } else { // time specified
+
+      reminderData = { "StartDate": chronoDateParse[0].start.date() };
+
+      // convert to UNIX
+      reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
+
+      // identify and add qualifier to reminderData
+      reminderData = addQualifierToReminderData(reminderData, qualifier, callback);
+
+      return saveReminderDataToDB(reminderData, userData, inputText, callback); // save to DB
+    }
+  }
+}
+
+function setMultipleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback) {
+
+  var reminderData = [];
+  var lastObject = chronoDateParse.length - 1;
+
+  // NOTE: doesn't account for multiple date/time combos
+  if (chronoDateParse[lastObject].end) { // has a time range
+
+    var parsedKnownTime = parseChronoKnownTimeValues(chronoDateParse[lastObject], callback);
+
+    reminderData = mergeDateAndTime(chronoDateParse, parsedKnownTime, callback);
+
+    // identify and add qualifier to reminderData
+    reminderData = addQualifierToReminderData(reminderData, qualifier, callback);
+
+    return saveReminderDataToDB(reminderData, userData, inputText, callback); // save to DB
+
+  } else { // no time range specified
+
+    if (chronoDateParse[lastObject].start.impliedValues.hasOwnProperty("hour")) { // no time specified
+      
+      // TODO: save qualifier too
+      return requestExplicitTimeOfDay(chronoDateParse, userData, qualifier, callback);
+
+    } else { // time specified
+
+      var parsedKnownTime = parseChronoKnownTimeValues(chronoDateParse[lastObject], callback);
+
+      reminderData = mergeDateAndTime(chronoDateParse, parsedKnownTime, callback);
+
+      // identify and add qualifier to reminderData
+      reminderData = addQualifierToReminderData(reminderData, qualifier, callback);
+
+      return saveReminderDataToDB(reminderData, userData, inputText, callback); // save to DB
+    }
+  }
+}
+
+// parses out the hour, minute, and second for the last DATE's start/end
 // as long as they are explicitly defined
 function parseChronoKnownTimeValues(chronoDateParse, callback) {
   // chronoDateParse will be chronoDateParse[n] if multiple objects
   // otherwise will be chronoDateParse[0]
-  // NOTE: currently makes the assumption no additional times will get specified in prior objects
+  // NOTE: currently makes the assumption no additional times will get specified in prior objects (dates)
 
   var startDate = chronoDateParse.start.knownValues;
   if (chronoDateParse.end) {
     var endDate = chronoDateParse.end.knownValues;
   }
+
   var parsedKnownTime = [];
 
-  if (chronoDateParse.start) {
-    // TODO: should add in logic to test if startDate values exist vs assigning them as undefined
-    // impacts the multiple value logic
-    if (startDate.hasOwnProperty("hour")) {
-      return parsedKnownTime;
-    } else {
-      parsedKnownTime[0] = {
-        "hour": startDate["hour"],
-        "minute": startDate["minute"],
-        "second": startDate["second"]
-      };
-    }
-    if (chronoDateParse.end) {
-      parsedKnownTime[1] = {
-        "hour": endDate["hour"],
-        "minute": endDate["minute"],
-        "second": endDate["second"]
-      };
-      return parsedKnownTime;
-    }
+  parsedKnownTime[0] = {
+    "hour": startDate["hour"],
+    "minute": startDate["minute"],
+    "second": startDate["second"]
+  };
+
+  if (chronoDateParse.end) {
+    parsedKnownTime[1] = {
+      "hour": endDate["hour"],
+      "minute": endDate["minute"],
+      "second": endDate["second"]
+    };
   }
+
+  console.log("known time values");
+  console.log(parsedKnownTime);
+  return parsedKnownTime;
 }
 
 // merges the date with times (for multiple days specified)
@@ -221,22 +301,16 @@ function mergeDateAndTime(chronoDateParse, parsedKnownTime, callback){
     }
   }
 
-  // convert to UNIX time
-  if (reminderData.length > 1) {
-    for (var i = 0; i < reminderData.length; i++) {
-      if (reminderData[i]["EndDate"]) {
-        reminderData[i]["EndDate"] = moment.unix(reminderData[i]["EndDate"])._i;
-      }
-      reminderData[i]["StartDate"] = moment.unix(reminderData[i]["StartDate"])._i;
+  console.log("merged reminder data");
+  console.log(reminderData);
+  
+  for (var i = 0; i < reminderData.length; i++) {
+    if (reminderData[i]["EndDate"]) {
+      reminderData[i]["EndDate"] = moment.unix(reminderData[i]["EndDate"])._i;
     }
-  } else {
-    if (reminderData["EndDate"]) {
-      reminderData["EndDate"] = moment.unix(reminderData["EndDate"])._i;
-    }
-    reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
+    reminderData[i]["StartDate"] = moment.unix(reminderData[i]["StartDate"])._i;
   }
 
-  console.log(reminderData);
   return reminderData;
 }
 
@@ -301,75 +375,51 @@ function setDateAndTimeValues(chronoDateParse, parsedKnownTime, callback) {
   return dateAndTime;
 }
 
-function setSingleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback) {
+function addQualifierToReminderData(reminderData, qualifier, callback) {
 
-  var reminderData = [];
-
-  if (chronoDateParse[0].end) { // has a time range
-
-    reminderData = {
-      "StartDate": chronoDateParse[0].start.date(), 
-      "EndDate": chronoDateParse[0].end.date()
-    };
-
-    // convert to UNIX
-    reminderData["EndDate"] = moment.unix(reminderData["EndDate"])._i;
-    reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
-
-    // identify and add qualifier to reminderData
-    switch(qualifier) {
-      case 'persistent':
+  // identify and add qualifier to reminderData
+  switch(qualifier) {
+    case 'persistent':
+      if (reminderData.length > 1) {
+        for (var i = 0; i < reminderData.length; i++) {
+          reminderData[i]["Persistent"] = true;
+        }
+      } else {
         reminderData["Persistent"] = true;
-        break;
-      case 'repeat':
-        reminderData["Repeat"] = "weekly";
-        break;
-      case 'alternating':
-        reminderData["Repeat"] = "bi-weekly";
-        break;
-    }
-
-    // save to DB
-    return saveReminderDataToDB(reminderData, userData, inputText, callback);
-
-  } else { // no time range specified
-
-    if (chronoDateParse[0].start.impliedValues.hasOwnProperty("hour")) { // no time specified
-      
-      return requestExplicitTimeOfDay(chronoDateParse, userData, callback);
-
-    } else { // time specified
-
-      reminderData = { "StartDate": chronoDateParse[0].start.date() };
-
-      // convert to UNIX
-      reminderData["StartDate"] = moment.unix(reminderData["StartDate"])._i;
-
-      // identify and add qualifier to reminderData
-      switch(qualifier) {
-        case 'persistent':
-          reminderData["Persistent"] = true;
-          break;
-        case 'repeat':
-          reminderData["Repeat"] = "weekly";
-          break;
-        case 'alternating':
-          reminderData["Repeat"] = "bi-weekly";
-          break;
       }
-
-      // save to DB
-      return saveReminderDataToDB(reminderData, userData, inputText, callback);
-    }
+      break;
+    case 'repeat':
+      if (reminderData.length > 1) {
+        for (var i = 0; i < reminderData.length; i++) {
+          reminderData[i]["Repeat"] = "weekly";
+        }
+      } else {
+        reminderData["Repeat"] = "weekly";
+      }
+      break;
+    case 'alternating':
+      if (reminderData.length > 1) {
+        for (var i = 0; i < reminderData.length; i++) {
+          reminderData[i]["Repeat"] = "bi-weekly";
+        }
+      } else {
+        reminderData["Repeat"] = "bi-weekly";
+      }
+      break;
   }
 
-  // save to DB
+  console.log("add qualifier if present");
+  console.log(reminderData);
+  return reminderData;
 }
 
 // texts user for a specific time of day when setting the reminderTime
-function requestExplicitTimeOfDay(chronoDateParse, userData, callback) {
+function requestExplicitTimeOfDay(chronoDateParse, userData, qualifier, callback) {
   // need to create a placeholder variable to know to pick up here on response
   // Step = time_of_day
+
+  chronoDateParse["qualifier"] = qualifier;
+
   var message = "I noticed you didn't set a time for this todo. What time would you like to be reminded (e.g. 10AM, 5PM, 2 to 3PM)? Or reply 'no' if you don't want to set a specific time.";
   var params = {
     "TableName": config.DB_TABLE_NAME,
@@ -447,19 +497,20 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
     var message = "Roger, todo saved."; // repeat it back to them (to verify)
   }
 
-  // adds DateCreated and Input keys
-  if (reminderData.length > 1) {
-    for (var i = 0; i < reminderData.length; i++) {
-      reminderData[i]["DateCreated"] = timestamp;
-      reminderData[i]["Input"] = inputText;
-    }
-  } else {
-    reminderData["DateCreated"] = timestamp;
-    reminderData["Input"] = inputText;
-  }
+  // set Archive params
+  var archiveParams = {
+    "Phone": userData.Phone,
+    "DateCreated": timestamp,
+    "Input": inputText,
+    "Todo": reminderData
+  };
+
+  // adds DateCreated and Input keys for todoParams
+  reminderData["DateCreated"] = timestamp;
+  reminderData["Input"] = inputText;
 
   // set Todo params
-  var createTodoParams = {
+  var todoParams = {
     TableName: config.DB_TABLE_NAME,
     Key:{
       "Phone": userData.Phone
@@ -471,18 +522,9 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
     ReturnValues:"UPDATED_NEW"
   };
 
-  // adds Phone key for archiving
-  if (reminderData.length > 1) {
-    for (var i = 0; i < reminderData.length; i++) {
-      reminderData[i]["Phone"] = userData.Phone;
-    }
-  } else {
-    reminderData["Phone"] = userData.Phone;
-  }
+  dynamo.createItem(archiveParams, 'archive', null); // saves to archive DB
 
-  dynamo.createItem(reminderData, 'archive', null); // saves to archive DB
-
-  return dynamo.updateItem(createTodoParams, message, callback); // saves to user's todos, returns message
+  return dynamo.updateItem(todoParams, message, callback); // saves to user's todos, returns message
   
 }
 
