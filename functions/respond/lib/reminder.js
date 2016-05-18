@@ -36,11 +36,11 @@ function processReminder(inputText, userData, callback) {
       if (chronoDateParse.length > 1) { // multiple dates found
 
         // TODO: need to detect AND or OR (OR is a much rarer case, visit later)
-        return setReminder(chronoDateParse, userData, 'multiple', qualifier, callback);
+        return setReminder(chronoDateParse, userData, 'multiple', qualifier, inputText, callback);
 
       } else { // single date
 
-        return setReminder(chronoDateParse, userData, 'single', qualifier, callback);
+        return setReminder(chronoDateParse, userData, 'single', qualifier, inputText, callback);
       }
 
     } 
@@ -106,7 +106,7 @@ function searchForQualifier(inputText, callback) {
 
 // TODO: expand this logic to identify the hour of the last muliple date occurence
 // and apply it to all items, add additional variable to requestExplicitTimeOfDay
-function setReminder(chronoDateParse, userData, dateType, qualifier, callback) {
+function setReminder(chronoDateParse, userData, dateType, qualifier, inputText, callback) {
   var reminderData = [];
   if (dateType == 'multiple') { // multiple days parsed by chrono
 
@@ -132,7 +132,7 @@ function setReminder(chronoDateParse, userData, dateType, qualifier, callback) {
   } else { // single day parsed by chrono
 
     // creates reminderData (and optional keys) based on qualifier
-    return setSingleDateReminderData(chronoDateParse, userData, qualifier, callback);
+    return setSingleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback);
   }
 }
 
@@ -300,7 +300,7 @@ function setDateAndTimeValues(chronoDateParse, parsedKnownTime, callback) {
   return dateAndTime;
 }
 
-function setSingleDateReminderData(chronoDateParse, userData, qualifier, callback) {
+function setSingleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback) {
 
   var reminderData = [];
 
@@ -329,7 +329,7 @@ function setSingleDateReminderData(chronoDateParse, userData, qualifier, callbac
     }
 
     // save to DB
-    return saveReminderDataToDB(reminderData, userData, callback);
+    return saveReminderDataToDB(reminderData, userData, inputText, callback);
 
   } else { // no time range specified
 
@@ -358,7 +358,7 @@ function setSingleDateReminderData(chronoDateParse, userData, qualifier, callbac
       }
 
       // save to DB
-      return saveReminderDataToDB(reminderData, userData, callback);
+      return saveReminderDataToDB(reminderData, userData, inputText, callback);
     }
   }
 
@@ -435,7 +435,9 @@ function saveExplicitTimeOfDay(inputText, UserData, callback) {
   // dynamo.updateItem(params, message, callback);
 }
 
-function saveReminderDataToDB(reminderData, userData, callback) {
+function saveReminderDataToDB(reminderData, userData, inputText, callback) {
+
+  var timestamp = moment().unix();
 
   reminderData["DateCreated"] = timestamp;
   reminderData["Input"] = inputText;

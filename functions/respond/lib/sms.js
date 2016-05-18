@@ -19,10 +19,7 @@ function createTodo(inputText, userData, callback) {
 
   // TODO: check if this todo exists?
 
-
   return reminder.processReminder(inputText, userData, callback);
-  // var reminderData = reminder.processReminder(inputText, userData, callback);
-
 }
 
 function listTodo(inputText, userData, callback) {
