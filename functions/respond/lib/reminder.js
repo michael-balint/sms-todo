@@ -35,16 +35,24 @@ function processReminder(inputText, userData, callback) {
     if (chronoDateParse != "") { // date found?
 
       // check for known qualifiers (BY, EVERY, EVERY OTHER)
-      var qualifier = searchForQualifier(inputText, callback);
+      var qualifier = searchForQualifier(inputText, chronoDateParse, callback);
 
-      if (chronoDateParse.length > 1) { // multiple dates found
+      if (qualifier == 'dumb') { // dumb qualifier check
 
-        // TODO: need to detect AND or OR between DATES (OR is a much rarer case, visit later)
-        return setReminder(chronoDateParse, userData, 'multiple', qualifier, inputText, callback);
+        return callback(null, "Woodhouse is still pretty dumb! Try a different todo that's simpler!");
 
-      } else { // single date
+      } else {
 
-        return setReminder(chronoDateParse, userData, 'single', qualifier, inputText, callback);
+        if (chronoDateParse.length > 1) { // multiple dates found
+
+          // TODO: need to detect AND or OR between DATES (OR is a much rarer case, visit later)
+          return setReminder(chronoDateParse, userData, 'multiple', qualifier, inputText, callback);
+
+        } else { // single date
+
+          return setReminder(chronoDateParse, userData, 'single', qualifier, inputText, callback);
+        }
+
       }
 
     }
@@ -69,39 +77,54 @@ function processReminder(inputText, userData, callback) {
 
 // finds the prior word to identify time qualifier
 // NOTE doesn't handle multiple subject / date combos
-function searchForQualifier(inputText, callback) {
+function searchForQualifier(inputText, chronoDateParse, callback) {
   // if word prior to DATE tag is a PREPOSITION tag and is by, constant reminder
   var terms = nlp.text(inputText).terms();
   console.log(terms);
+
   for (var i = 0; i < terms.length; i++) { // if PREP is before DATE, take action
+
     if (terms[i].tag == "Date") {
 
-      switch(terms[i-1].tag) {
+      var nlpDateText = terms[i].text;
+      nlpDateText = nlpDateText.replace(/\./g,'');
 
-        case 'Preposition': // looking for BY
-          if (terms[i-1].text == "by") {
-            return "persistent";
-          } else if (terms[i-1].text == "until") {
-            return "repeat";
-          } else {
-            return null;
-          }
+      // handle the or qualifier situation (NLP: Monday at 5 or 7PM // Chrono: Monday at 5)
+      if (nlpDateText != chronoDateParse[0].text) {
+  
+        console.log(chronoDateParse[0].text);
+        console.log(nlpDateText)
+        return 'dumb';
 
-        case 'Determiner': // looking for EVERY (how to handle multiple EVERYS?)
-          if (terms[i-1].text == "every") {
-            return "repeat";
-          } else {
-            return null;
-          }
+      } else { // all other cases
 
-        case 'Adjective': // looking for EVERY OTHER (next iteration)
-          if (terms[i-1].text == "other") {
-            if (terms[i-2].text == "every") {
-              return "alternating";
+        switch(terms[i-1].tag) {
+
+          case 'Preposition': // looking for BY
+            if (terms[i-1].text == "by") {
+              return "persistent";
+            } else if (terms[i-1].text == "until") {
+              return "repeat";
+            } else {
+              return "none";
             }
-          } else {
-            return null;
-          }
+
+          case 'Determiner': // looking for EVERY (how to handle multiple EVERYS?)
+            if (terms[i-1].text == "every") {
+              return "repeat";
+            } else {
+              return "none";
+            }
+
+          case 'Adjective': // looking for EVERY OTHER (next iteration)
+            if (terms[i-1].text == "other") {
+              if (terms[i-2].text == "every") {
+                return "alternating";
+              }
+            } else {
+              return "none";
+            }
+        }
       }
     }
   }
@@ -110,29 +133,11 @@ function searchForQualifier(inputText, callback) {
 // TODO: expand this logic to identify the hour of the last muliple date occurence
 // and apply it to all items, add additional variable to requestExplicitTimeOfDay
 function setReminder(chronoDateParse, userData, dateType, qualifier, inputText, callback) {
-  var reminderData = [];
   if (dateType == 'multiple') { // multiple days parsed by chrono
 
-    return setMultipleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback);
-
-    // // TODO: take last object's (day's) time range to be applied to the prior days
-    // var parsedKnownTime = parseChronoKnownTimeValues(chronoDateParse[chronoDateParse.length-1], callback);
-
-    // switch(qualifier) {
-    //   case 'repeat': // TODO: still need to figure out how to manage repeat
-    //     console.log('create constant, multiple days/week reminders');
-    //     break;
-
-    //   default: // likely on or this
-
-    //     if (parsedKnownTime == undefined) { // no time specified
-    //       return requestExplicitTimeOfDay(chronoDateParse, userData, callback);
-    //     }
-    //     else { // START and END time
-    //       return mergeDateAndTime(chronoDateParse, parsedKnownTime, callback);
-    //     }
-
-    // }
+    // I think we should comment this out for now
+    // return setMultipleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback);
+    return callback(null, "Woodhouse is a bit slow still and can't process multiple times at this time. Try breaking it up into multiple todos!");
 
   } else { // single day parsed by chrono
 
@@ -165,7 +170,8 @@ function setSingleDateReminderData(chronoDateParse, userData, qualifier, inputTe
 
     if (chronoDateParse[0].start.impliedValues.hasOwnProperty("hour")) { // no time specified
       
-      return requestExplicitTimeOfDay(chronoDateParse, userData, qualifier, callback);
+      // TODO: ask the user for a date and time
+      return saveReminderDataToDB({}, userData, inputText, callback); // save to DB
 
     } else { // time specified
 
@@ -409,89 +415,86 @@ function addQualifierToReminderData(reminderData, qualifier, callback) {
   }
 
   console.log("add qualifier if present");
-  console.log(reminderData);
   return reminderData;
 }
 
 // texts user for a specific time of day when setting the reminderTime
-function requestExplicitTimeOfDay(chronoDateParse, userData, qualifier, callback) {
-  // need to create a placeholder variable to know to pick up here on response
-  // Step = time_of_day
+// function requestExplicitTimeOfDay(userData, inputText, callback) {
+//   // need to create a placeholder variable to know to pick up here on response
+//   // Step = type_of_request
+//   // TempData = the original date text
+//   // TempQualifier = if qualifier exists
+  
+//   var message = "I noticed you didn't set a time for this todo. What time would you like to be reminded (e.g. 10AM, 5PM, 2 to 3PM)? Or reply 'no' if you don't want to set a specific time.";
+//   var params = {
+//     "TableName": config.DB_TABLE_NAME,
+//     "Key": {
+//       "Phone": userData.Phone
+//     },
+//     UpdateExpression: "set TempData=:tempData, Step=:step",
+//     ExpressionAttributeValues: {
+//       ":tempData": inputText,
+//       ":step": "request_time_of_day"
+//     },
+//     ReturnValues:"UPDATED_NEW"
+//   };
 
-  chronoDateParse["qualifier"] = qualifier;
+//   dynamo.updateItem(params, message, callback);
+//   return callback;
+// }
 
-  var message = "I noticed you didn't set a time for this todo. What time would you like to be reminded (e.g. 10AM, 5PM, 2 to 3PM)? Or reply 'no' if you don't want to set a specific time.";
-  var params = {
-    "TableName": config.DB_TABLE_NAME,
-    "Key": {
-      "Phone": userData.Phone
-    },
-    UpdateExpression: "set TempData=:tempData, Step=:step",
-    ExpressionAttributeValues: {
-      ":tempData": chronoDateParse,
-      ":step": "request_time_of_day"
-    },
-    ReturnValues:"UPDATED_NEW"
-  };
+// // TODOS in this FUNCTION
+// // called by handler if UserData.Step = "time_of_day"
+// // associates a time with a specified day
+// function saveExplicitTimeOfDay(inputText, userData, callback) {
 
-  dynamo.updateItem(params, message, callback);
-  return callback;
-}
+//   var chronoDateParse = chrono.parse(inputText, moment()._d, {forwardDatesOnly: true});
+//   var message;
 
-// TODOS in this FUNCTION
-// called by handler if UserData.Step = "time_of_day"
-// associates a time with a specified day
-function saveExplicitTimeOfDay(inputText, UserData, callback) {
-  console.log(UserData.TempData);
-  console.log(UserData.Step);
+//   console.log(chronoDateParse);
+//   console.log(qualifier);
 
-  var chronoDateParse = UserData.TempData, message;
+//   if (inputText == 'no') {
 
-  if (inputText == 'no') {
-    message = "Got it. This will be included in your daily reminder only.";
+//     clearStagingData(userData);
+//     setSingleDateReminderData(chronoDateParse, userData, qualifier, inputText, callback)
 
-    // figure out a way to return a value that signifies no time of day specified
-  } else {
+//   } else { // TODO: create else if condition for Regex Validation of time
 
-    // TODO: check if times can be determined from Chrono
+//     clearStagingData(userData);
 
-    message = "Thanks! I'll set the reminder date and time accordingly.";
+//     // TODO: will need to manage multiple dates/times
+//     setReminder(chronoDateParse, userData, "single", qualifier, inputText, callback);
 
-    // associate a time, handles multiple reminder days
-    for (var i = 0; i < chronoDateParse.length; i++) {
-      console.log(chronoDateParse[i]);
-      // add knownValues time (using inputText)
-      // remove ImpliedValues time
-      // save to chronoDateParse
+//   } // add else condition for exception handling
+// }
 
-      // TODO: add in conditions for multiple days, possibly leverage existing functions
-    }
+// // reset staging data
+// function clearStagingData(userData, message) {
 
-  }
+//   var params = {
+//     "TableName": config.DB_TABLE_NAME,
+//     "Key": {
+//       "Phone": userData.Phone
+//     },
+//     UpdateExpress: "set TempData=:tempData, Step=:step",
+//     ExpressionAttributeValues: {
+//       ":tempData": [],
+//       ":step": "none"
+//     },
+//     returnValues:"UPDATED_NEW"
+//   };
 
-  // update TempData and Step
-  var params = {
-    "TableName": config.DB_TABLE_NAME,
-    "Key": {
-      "Phone": userData.Phone
-    },
-    UpdateExpression: "set TempData=:tempData, Step=:step",
-    ExpressionAttributeValues: {
-      ":tempData": chronoDateParse,
-      ":step": "set_time_of_day"
-    },
-    ReturnValues:"UPDATED_NEW"
-  };
-  console.log(message);
-  // dynamo.updateItem(params, message, callback);
-}
+//   dynamo.updateItem(params, message, callback);
+// }
 
+// save todo to DB and archive DB
 function saveReminderDataToDB(reminderData, userData, inputText, callback) {
 
   var timestamp = moment().unix();
 
   if (_.isEmpty(reminderData)) { // no reminder date or time specified/detected
-    var message = "Thanks! You'll be reminded each day until deleted.";
+    var message = "Got it! You'll be reminded each day until deleted.";
   } else {
     // TODO: add in randomized responses
     var message = "Roger, todo saved."; // repeat it back to them (to verify)
@@ -529,6 +532,5 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
 }
 
 module.exports = {
-  processReminder: processReminder,
-  saveExplicitTimeOfDay: saveExplicitTimeOfDay
+  processReminder: processReminder
 }

@@ -53,19 +53,19 @@ module.exports.handler = (event, context, callback) => {
 
         if (userData.NewUser == true) { return sms.initialSetup(inputText, userData, next); }
 
-        else if (userData.Step != "none") { // multi-step sms conditions
+        // else if (userData.Step) { // multi-step sms conditions
 
-          switch(userData.Step) {
+        //   switch(userData.Step) {
 
-            case 'request_time_of_day':
-              reminder.saveExplicitTimeOfDay(inputText, userData, next);
-              break;
+        //     case 'request_time_of_day':
+        //       reminder.saveExplicitTimeOfDay(inputText, userData, next);
+        //       break;
 
-            case 'set_time_of_day':
-              // reminder.set
-              break;
-          }
-        }
+        //     case 'set_time_of_day':
+        //       // reminder.set
+        //       break;
+        //   }
+        // }
 
         else {
 
