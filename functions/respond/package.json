@@ -9,8 +9,9 @@
   "author": "Michael Balint",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.0.0-rc.4",
-    "aws-sdk": "^2.3.9",
+    "async": "^2.0.0-rc.6",
+    "aws-sdk": "^2.4.5",
+    "chrono-node": "^1.2.4",
     "lodash": "^4.11.2",
     "moment": "^2.13.0",
     "nlp_compromise": "^4.10.5",

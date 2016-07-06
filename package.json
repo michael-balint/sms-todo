@@ -11,6 +11,6 @@
   },
   "dependencies": {
     "serverless-meta-sync": "^0.1.0",
-    "serverless-offline": "^2.3.2"
+    "serverless-offline": "^2.6.1"
   }
 }

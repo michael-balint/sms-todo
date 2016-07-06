@@ -2,7 +2,8 @@
 // =============
 
 // AlchemyAPI functions
-// TODO: only handles one subject, need to add in conditions for multiple subjects (break into multiple todos? not for now)
+// TODO: only handles one subject, need to add in conditions for multiple
+// subjects (break into multiple todos? not for now)
 
 var watson = require('watson-developer-cloud');
 var alchemyCreds = require('../alchemy-creds.json');
@@ -43,7 +44,9 @@ function alchemyTaxonomy(text, params, callback) {
       console.log(JSON.stringify(response.taxonomy, null, 2));
       var taxonomy = [];
       for (var i = 0; i < response.taxonomy.length; i++) {
-        if (!response.taxonomy[i].confident) { taxonomy.push(response.taxonomy[i]); };
+        if (!response.taxonomy[i].confident) {
+          taxonomy.push(response.taxonomy[i]);
+        };
       }
       params["Taxonomy"] = taxonomy;
       return callback(null, params);

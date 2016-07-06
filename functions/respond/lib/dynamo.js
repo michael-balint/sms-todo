@@ -10,7 +10,7 @@ var config = require('../config.json');
 
 // creates a new item in the USER TABLE
 function createItem(params, dbType, callback) {
-  
+
   var dbParams = setDBParams(params, dbType, 'create');
 
   db.put(dbParams, (err, data) => {
@@ -26,7 +26,7 @@ function createItem(params, dbType, callback) {
 
 // searches for an ITEM in the TABLE, if not found, creates a new ITEM
 function searchForItem(params, callback) {
-  
+
   var dbParams = setDBParams(params, 'prod', 'search');
 
   db.get(dbParams, (err, data) => {
