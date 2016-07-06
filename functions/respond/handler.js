@@ -16,6 +16,8 @@ const config = require('./config.json');
 // Serverless function (GET)
 module.exports.handler = (event, context, callback) => {
 
+  // TODO: add plivo.validateMessage call and refactor the following into submethods...
+
   if (event.To.toString() !== config.PHONE) { // validates SMS parameters
 
     if (event.From.toString() == config.PHONE) { // initiates new user onboarding
@@ -80,7 +82,7 @@ module.exports.handler = (event, context, callback) => {
 
           // DELETE todo
           else if (inputText.search(/delete /gi) >= 0) { return sms.deleteTodo(inputText, userData, next); }
-          
+
           // UPDATE settings
           else if (inputText.search(/name /gi) >= 0 ||
                       inputText.search(/time zone /gi) >= 0 ||

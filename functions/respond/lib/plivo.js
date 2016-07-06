@@ -41,9 +41,9 @@ function validateMessage(params, callback) {
 
     if (message_state !== "delivered" ||
         message_direction !== "inbound" ||
-        message_type !== "sms"
-        // from_number !== params.From ||
-        // to_number !== params.To
+        message_type !== "sms" ||
+        from_number !== params.From.toString() ||
+        to_number !== params.To.toString()
     ) {
       return callback(new Error(
         `Plivo mismatch when validating message: ${JSON.stringify(response)}`
