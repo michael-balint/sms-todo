@@ -1,9 +1,12 @@
 // sms.js
 // =============
 
+const _ = require('lodash');
+const async = require('async');
 var moment = require('moment');
 
 // local js libraries
+var plivo = require('./plivo.js');
 var dynamo = require('./dynamo.js');
 var reminder = require('./reminder.js');
 var config = require('../config.json');
@@ -13,6 +16,99 @@ var config = require('../config.json');
 // 2) list tasks (List)
 // 3) edit task (Edit N)
 // 4) remove task (Delete N) >> note removes it but never deletes
+
+function handleMessage(params, callback) {
+  if (params.To.toString() !== config.PHONE) { // validates SMS parameters
+
+    if (params.From.toString() == config.PHONE) { // initiates new user onboarding
+
+      let messageParams = {
+        'src': config.PHONE,
+        'dst': params.To.toString(),
+        'text': "Hello! My name is Woodhouse, welcome to my private beta. I'm here to help manage all your todos. To get started, I'm going to ask a few quick questions. What's your name?"
+      }
+
+      return plivo.sendMessage (messageParams, callback);
+
+    } else {
+
+      console.log(params, config);
+      return callback(new Error("Invalid input."));
+    }
+  } else {
+
+    let inputText = params.Text;
+    let userPhone = params.From.toString();
+
+    async.waterfall([
+      (next) => { // locate the user or create a new one
+
+        let params = {
+          Phone: userPhone,
+          inputText: inputText
+        };
+
+        return dynamo.searchForItem(params, next);
+
+      },
+      (userData, next) => { // run through initialSetup or handleMessage
+
+        if (userData.NewUser == true) { return initialSetup(inputText, userData, next); }
+
+        // else if (userData.Step) { // multi-step sms conditions
+
+        //   switch(userData.Step) {
+
+        //     case 'request_time_of_day':
+        //       reminder.saveExplicitTimeOfDay(inputText, userData, next);
+        //       break;
+
+        //     case 'set_time_of_day':
+        //       // reminder.set
+        //       break;
+        //   }
+        // }
+
+        else {
+
+          // CREATE todo
+          if (inputText.search(/remind me to /gi) >= 0) { return createTodo(inputText, userData, next); }
+
+          // LIST todo
+          else if (inputText.search(/list/gi) >= 0) { return listTodo(inputText, userData, next); }
+
+          // EDIT todo
+          else if (inputText.search(/edit /gi) >= 0) { return editTodo(inputText, userData, next); }
+
+          // DELETE todo
+          else if (inputText.search(/delete /gi) >= 0) { return deleteTodo(inputText, userData, next); }
+
+          // UPDATE settings
+          else if (inputText.search(/name /gi) >= 0 ||
+                      inputText.search(/time zone /gi) >= 0 ||
+                      inputText.search(/daily reminder time /gi) >= 0) { return updateSettings(inputText, userData, next); }
+
+          // INITIAL SETUP and other use cases
+          else { return processMessage(inputText, userData, next); }
+
+        }
+      },
+      (messageText, next) => { // send response SMS
+
+        let messageParams = {
+          'src': config.PHONE,
+          'dst': userPhone,
+          'text': messageText
+        };
+
+        return plivo.sendMessage(messageParams, next);
+
+      }
+    ], (err, response) => {
+      return callback(err, response);
+    });
+  }
+}
 
 function createTodo(inputText, userData, callback) {
 
@@ -86,10 +182,10 @@ function deleteTodo(inputText, userData, callback) {
 
   var todoNumber = Number(inputText.replace(/delete /gi, ""));
   // TODO: get list of all todoNumbers associated with user
-  if (todoNumber === parseInt(todoNumber, 10) && 
-        todoNumber <= todosCount && 
+  if (todoNumber === parseInt(todoNumber, 10) &&
+        todoNumber <= todosCount &&
         todoNumber > 0) {
-    
+
     todoNumber = todoNumber - 1;
 
     // setup TABLE update params
@@ -246,6 +342,7 @@ function validateTime(time) {
 }
 
 module.exports = {
+  handleMessage: handleMessage,
   createTodo: createTodo,
   listTodo: listTodo,
   // editTodo: editTodo,
