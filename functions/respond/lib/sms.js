@@ -6,10 +6,10 @@ const async = require('async');
 var moment = require('moment');
 
 // local js libraries
-var plivo = require('./plivo.js');
+var twilio = require('./twilio.js');
 var dynamo = require('./dynamo.js');
 var reminder = require('./reminder.js');
-var config = require('../config.json');
+var config = require('../config');
 
 // TODO: add in various conditions
 // 1) new task (Remind me)
@@ -18,32 +18,32 @@ var config = require('../config.json');
 // 4) remove task (Delete N) >> note removes it but never deletes
 
 function handleMessage(params, callback) {
+  console.log(params.To, config.PHONE);
   if (params.To.toString() !== config.PHONE) { // validates SMS parameters
 
     if (params.From.toString() == config.PHONE) { // initiates new user onboarding
 
-      let messageParams = {
-        'src': config.PHONE,
-        'dst': params.To.toString(),
-        'text': "Hello! My name is Woodhouse, welcome to my private beta. I'm here to help manage all your todos. To get started, I'm going to ask a few quick questions. What's your name?"
+      var messageParams = {
+        'from': config.PHONE,
+        'to': params.To.toString(),
+        'body': "Hello! My name is Woodhouse, welcome to my private beta. I'm here to help manage all your todos. To get started, I'm going to ask a few quick questions. What's your name?"
       }
 
-      return plivo.sendMessage (messageParams, callback);
+      return twilio.sendMessage(messageParams, callback);
 
     } else {
-
-      console.log(params, config);
+      // console.log(params, config);
       return callback(new Error("Invalid input."));
     }
   } else {
 
-    let inputText = params.Text;
-    let userPhone = params.From.toString();
+    var inputText = params.Body;
+    var userPhone = params.From.toString();
 
     async.waterfall([
       (next) => { // locate the user or create a new one
 
-        let params = {
+        var params = {
           Phone: userPhone,
           inputText: inputText
         };
@@ -95,13 +95,13 @@ function handleMessage(params, callback) {
       },
       (messageText, next) => { // send response SMS
 
-        let messageParams = {
-          'src': config.PHONE,
-          'dst': userPhone,
-          'text': messageText
+        var messageParams = {
+          'from': config.PHONE,
+          'to': userPhone,
+          'body': messageText
         };
 
-        return plivo.sendMessage(messageParams, next);
+        return twilio.sendMessage(messageParams, next);
 
       }
     ], (err, response) => {

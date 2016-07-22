@@ -60,7 +60,7 @@
         ]
       }
     },
-    "Dynamo": {
+    "DynamoWoodhouse": {
       "Type": "AWS::DynamoDB::Table",
       "Properties": {
         "AttributeDefinitions": [
@@ -76,10 +76,32 @@
           }
         ],
         "ProvisionedThroughput": {
-          "ReadCapacityUnits": 1,
-          "WriteCapacityUnits": 1
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
         },
-        "TableName": "sms-todo"
+        "TableName": "woodhouse-${stage}"
+      }
+    },
+    "DynamoWoodhouseArchive": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "Phone",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "Phone",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        },
+        "TableName": "woodhouse-archive-${stage}"
       }
     }
   },

@@ -1,0 +1,5 @@
+curl -XPOST 'http://localhost:3000/respond' -H 'Content-Type: application/json' -d '{
+  "From": "+17076225468",
+  "To": "+12023355133",
+  "Body": "test"
+}' | json_pp

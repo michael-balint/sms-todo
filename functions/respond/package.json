@@ -10,12 +10,11 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.0.0-rc.6",
-    "aws-sdk": "^2.4.5",
+    "aws-sdk": "^2.4.9",
     "chrono-node": "^1.2.4",
     "lodash": "^4.11.2",
     "moment": "^2.13.0",
     "nlp_compromise": "^4.10.5",
-    "plivo": "^0.3.3",
-    "watson-developer-cloud": "^1.5.0"
+    "twilio": "^2.9.1"
   }
 }

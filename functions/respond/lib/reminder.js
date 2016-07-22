@@ -14,7 +14,7 @@ var moment = require('moment');
 
 // local js libraries
 var dynamo = require('./dynamo.js');
-var config = require('../config.json');
+var config = require('../config');
 
 function processReminder(inputText, userData, callback) {
 
@@ -91,7 +91,7 @@ function searchForQualifier(inputText, chronoDateParse, callback) {
 
       // handle the or qualifier situation (NLP: Monday at 5 or 7PM // Chrono: Monday at 5)
       if (nlpDateText != chronoDateParse[0].text) {
-  
+
         console.log(chronoDateParse[0].text);
         console.log(nlpDateText)
         return 'dumb';
@@ -153,7 +153,7 @@ function setSingleDateReminderData(chronoDateParse, userData, qualifier, inputTe
   if (chronoDateParse[0].end) { // has a time range
 
     reminderData = {
-      "StartDate": chronoDateParse[0].start.date(), 
+      "StartDate": chronoDateParse[0].start.date(),
       "EndDate": chronoDateParse[0].end.date()
     };
 
@@ -169,7 +169,7 @@ function setSingleDateReminderData(chronoDateParse, userData, qualifier, inputTe
   } else { // no time range specified
 
     if (chronoDateParse[0].start.impliedValues.hasOwnProperty("hour")) { // no time specified
-      
+
       // TODO: ask the user for a date and time
       return saveReminderDataToDB({}, userData, inputText, callback); // save to DB
 
@@ -208,7 +208,7 @@ function setMultipleDateReminderData(chronoDateParse, userData, qualifier, input
   } else { // no time range specified
 
     if (chronoDateParse[lastObject].start.impliedValues.hasOwnProperty("hour")) { // no time specified
-      
+
       // TODO: save qualifier too
       return requestExplicitTimeOfDay(chronoDateParse, userData, qualifier, callback);
 
@@ -284,7 +284,7 @@ function mergeDateAndTime(chronoDateParse, parsedKnownTime, callback){
     }
 
     reminderData[i] = {
-      "StartDate": moment([ 
+      "StartDate": moment([
         startDate[i]["year"],
         startDate[i]["month"]-1, // bug-ish
         startDate[i]["day"],
@@ -296,7 +296,7 @@ function mergeDateAndTime(chronoDateParse, parsedKnownTime, callback){
 
     // checks if an EndDate needs to be saved
     if (parsedKnownTime[1]) {
-      reminderData[i]["EndDate"] = moment([ 
+      reminderData[i]["EndDate"] = moment([
         endDate[i]["year"],
         endDate[i]["month"]-1, // bug-ish
         endDate[i]["day"],
@@ -309,7 +309,7 @@ function mergeDateAndTime(chronoDateParse, parsedKnownTime, callback){
 
   console.log("merged reminder data");
   console.log(reminderData);
-  
+
   for (var i = 0; i < reminderData.length; i++) {
     if (reminderData[i]["EndDate"]) {
       reminderData[i]["EndDate"] = moment.unix(reminderData[i]["EndDate"])._i;
@@ -424,7 +424,7 @@ function addQualifierToReminderData(reminderData, qualifier, callback) {
 //   // Step = type_of_request
 //   // TempData = the original date text
 //   // TempQualifier = if qualifier exists
-  
+
 //   var message = "I noticed you didn't set a time for this todo. What time would you like to be reminded (e.g. 10AM, 5PM, 2 to 3PM)? Or reply 'no' if you don't want to set a specific time.";
 //   var params = {
 //     "TableName": config.DB_TABLE_NAME,
@@ -528,7 +528,7 @@ function saveReminderDataToDB(reminderData, userData, inputText, callback) {
   };
 
   return dynamo.updateItem(todoParams, message, callback); // saves to user's todos, returns message
-  
+
 }
 
 module.exports = {

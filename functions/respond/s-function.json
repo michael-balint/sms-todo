@@ -14,20 +14,13 @@
   "endpoints": [
     {
       "path": "respond",
-      "method": "GET",
+      "method": "POST",
       "type": "AWS",
       "authorizationType": "none",
       "authorizerFunction": false,
       "apiKeyRequired": false,
-      "requestParameters": {
-        "integration.request.querystring.To": "method.request.querystring.To",
-        "integration.request.querystring.From": "method.request.querystring.From",
-        "integration.request.querystring.Text": "method.request.querystring.Text",
-        "integration.request.querystring.Type": "method.request.querystring.Type",
-        "integration.request.querystring.MessageUUID": "method.request.querystring.MessageUUID"
-      },
       "requestTemplates": {
-        "application/json": "{\n\"To\": \"$input.params('To')\",\n\"From\": \"$input.params('From')\",\n\"Text\": \"$input.params('Text')\",\n\"MessageUUID\": \"$input.params('MessageUUID')\"}"
+        "application/json": "{ \"body\": $input.json('$') }"
       },
       "responses": {
         "400": {
@@ -35,7 +28,9 @@
         },
         "default": {
           "statusCode": "200",
-          "responseParameters": {},
+          "responseParameters": {
+            "method.response.header.Content-Type": "'text/xml'"
+          },
           "responseModels": {
             "application/json;charset=UTF-8": "Empty"
           },

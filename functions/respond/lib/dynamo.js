@@ -6,7 +6,7 @@ var AWS = require('aws-sdk');
 AWS.config.update({region:'us-east-1'});
 var db = new AWS.DynamoDB.DocumentClient();
 
-var config = require('../config.json');
+var config = require('../config');
 
 // creates a new item in the USER TABLE
 function createItem(params, dbType, callback) {
