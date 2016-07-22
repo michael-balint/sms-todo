@@ -18,9 +18,11 @@ class SendDailyAlerts extends SendAlerts {
     // TODO(Stroup): query dynamo for alerts
 
     // QUERY all users with a specific time > grab the Todos
-    // grab the TOP 5 (initially the first 5)
+    // grab the TOP 5 (initially the first 5) > eventually most important based on time
     // send as message (via alert)
 
+    // search for todo element within user item
+    
     console.log(utcDateTime._d);
 
     let params = {

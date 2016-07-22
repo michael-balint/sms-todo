@@ -1,11 +1,10 @@
-// setup.js
+// sms.js
 // =============
 
 var moment = require('moment');
 
 // local js libraries
 var dynamo = require('./dynamo.js');
-var alchemy = require('./alchemy.js');
 var reminder = require('./reminder.js');
 var config = require('../config.json');
 
