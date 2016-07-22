@@ -18,7 +18,6 @@ var config = require('../config');
 // 4) remove task (Delete N) >> note removes it but never deletes
 
 function handleMessage(params, callback) {
-  console.log(params.To, config.PHONE);
   if (params.To.toString() !== config.PHONE) { // validates SMS parameters
 
     if (params.From.toString() == config.PHONE) { // initiates new user onboarding
