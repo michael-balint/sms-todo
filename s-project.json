@@ -7,7 +7,7 @@
     }
   },
   "plugins": [
-      "serverless-meta-sync",
-      "serverless-offline"
+    "serverless-meta-sync",
+    "serverless-offline"
   ]
 }

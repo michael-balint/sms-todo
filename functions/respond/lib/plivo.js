@@ -35,9 +35,11 @@ function validateMessage(params, callback) {
       ));
     }
 
-    const {
-      message_state, message_direction, message_type, from_number, to_number
-    } = response;
+    const message_state = response.message_state;
+    const message_state = response.message_direction;
+    const message_state = response.message_type;
+    const message_state = response.from_number;
+    const message_state = response.to_number;
 
     if (message_state !== "delivered" ||
         message_direction !== "inbound" ||
