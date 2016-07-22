@@ -10,7 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.0.0-rc.6",
-    "aws-sdk": "^2.4.9",
     "chrono-node": "^1.2.4",
     "lodash": "^4.11.2",
     "moment": "^2.13.0",
