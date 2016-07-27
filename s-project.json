@@ -6,12 +6,6 @@
       "region": "us-east-1"
     }
   },
-  "custom": {
-    "meta": {
-      "name": "sms-todo-meta",
-      "region": "us-east-1"
-    }
-  },
   "plugins": [
     "serverless-meta-sync"
   ]
