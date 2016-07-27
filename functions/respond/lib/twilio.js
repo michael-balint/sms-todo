@@ -16,9 +16,10 @@ function validateMessage(params, callback) {
   // }
 
   // skip validation if we are in offline mode
-  // if (process.env.IS_OFFLINE) {
-  //   return callback();
-  // }
+  if (process.env.IS_OFFLINE || process.env.SERVERLESS_STAGE === 'dev') {
+    return callback(null, {"status": "Valid"});
+  }
+
   if (!params.MessageSid) {
     return callback(new Error(`Invalid 'MessageSid' field.`), {"status": "Invalid"});
   }
@@ -63,7 +64,7 @@ function sendMessage(params, callback) {
     }
     // var resp = new twilio.TwimlResponse();
     // resp.say(params.body);
-    return callback(null, params.body);
+    return callback(null, params);
   });
 }
 

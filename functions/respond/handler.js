@@ -6,11 +6,13 @@ const twilio = require('./lib/twilio.js');
 // Serverless function (GET)
 module.exports.handler = (event, context, callback) => {
   console.log(`Received message: ${JSON.stringify(event)}`);
+  // console.log(`${JSON.stringify(context)}`);
+  // console.log(process.env);
 
   // TODO: add twilio.validateMessage call and refactor the following into submethods...
   twilio.validateMessage(event, (err, response) => {
     if (response.status === "Valid") {
-      return sms.handleMessage(event, callback);
+      return sms.handleMessage(event.body, callback);
     } else {
       return callback(new Error("Message must be sent from a mobile device."));
     }

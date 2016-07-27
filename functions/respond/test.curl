@@ -1,5 +1,11 @@
-curl -XPOST 'http://localhost:3000/respond' -H 'Content-Type: application/json' -d '{
+curl -XPOST 'https://sz5osugl07.execute-api.us-east-1.amazonaws.com/dev/respond' -H 'Content-Type: application/json' -d '{
   "From": "+17076225468",
+  "To": "+12023355133",
+  "Body": "test"
+}' | json_pp
+
+curl -XPOST 'https://sz5osugl07.execute-api.us-east-1.amazonaws.com/dev/respond' -H 'Content-Type: application/json' -d '{
+  "From": "+19186918755",
   "To": "+12023355133",
   "Body": "test"
 }' | json_pp

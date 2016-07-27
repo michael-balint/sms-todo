@@ -19,6 +19,7 @@
       "authorizationType": "none",
       "authorizerFunction": false,
       "apiKeyRequired": false,
+      "requestParameters": {},
       "requestTemplates": {
         "application/json": "{ \"body\": $input.json('$') }"
       },
@@ -28,9 +29,7 @@
         },
         "default": {
           "statusCode": "200",
-          "responseParameters": {
-            "method.response.header.Content-Type": "'text/xml'"
-          },
+          "responseParameters": {},
           "responseModels": {
             "application/json;charset=UTF-8": "Empty"
           },
