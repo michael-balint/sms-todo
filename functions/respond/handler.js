@@ -12,7 +12,7 @@ module.exports.handler = (event, context, callback) => {
   // TODO: add twilio.validateMessage call and refactor the following into submethods...
   twilio.validateMessage(event, (err, response) => {
     if (response.status === "Valid") {
-      return sms.handleMessage(event.body, callback);
+      return sms.handleMessage(event, callback);
     } else {
       return callback(new Error("Message must be sent from a mobile device."));
     }

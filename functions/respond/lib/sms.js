@@ -18,13 +18,16 @@ var config = require('../config');
 // 4) remove task (Delete N) >> note removes it but never deletes
 
 function handleMessage(params, callback) {
-  if (params.To.toString() !== config.PHONE) { // validates SMS parameters
+  var toPhone = decodeURIComponent(params.To.toString());
+  var fromPhone = decodeURIComponent(params.From.toString());
 
-    if (params.From.toString() == config.PHONE) { // initiates new user onboarding
+  if (toPhone !== config.PHONE) { // validates SMS parameters
+
+    if (fromPhone == config.PHONE) { // initiates new user onboarding
 
       var messageParams = {
         'from': config.PHONE,
-        'to': params.To.toString(),
+        'to': toPhone,
         'body': "Hello! My name is Woodhouse, welcome to my private beta. I'm here to help manage all your todos. To get started, I'm going to ask a few quick questions. What's your name?"
       }
 
@@ -36,8 +39,8 @@ function handleMessage(params, callback) {
     }
   } else {
 
-    var inputText = params.Body;
-    var userPhone = params.From.toString();
+    var inputText = decodeURIComponent(params.Body);
+    var userPhone = decodeURIComponent(params.From.toString());
 
     async.waterfall([
       (next) => { // locate the user or create a new one
