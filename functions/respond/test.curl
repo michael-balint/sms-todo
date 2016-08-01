@@ -5,7 +5,7 @@ curl -XPOST 'https://sz5osugl07.execute-api.us-east-1.amazonaws.com/dev/respond'
 }' | json_pp
 
 curl -XPOST 'https://sz5osugl07.execute-api.us-east-1.amazonaws.com/dev/respond' -H 'Content-Type: application/json' -d '{
-  "From": "+19186918755",
-  "To": "+12023355133",
+  "From": "+12023355133",
+  "To": "+19186918755",
   "Body": "test"
 }' | json_pp
