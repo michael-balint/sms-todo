@@ -31,10 +31,10 @@
           "statusCode": "200",
           "responseParameters": {},
           "responseModels": {
-            "application/json;charset=UTF-8": "Empty"
+            "application/xml;charset=UTF-8": "Empty"
           },
           "responseTemplates": {
-            "application/json;charset=UTF-8": ""
+            "application/xml;charset=UTF-8": ""
           }
         }
       }

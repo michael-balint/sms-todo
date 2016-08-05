@@ -62,9 +62,10 @@ function sendMessage(params, callback) {
     if (err) {
       return callback(new Error("Twilio Error"));
     }
-    // var resp = new twilio.TwimlResponse();
-    // resp.say(params.body);
-    return callback(null, params);
+    var resp = new twilio.TwimlResponse();
+    resp.say(params.body);
+    console.log(resp.toString());
+    return callback(null, resp.toString());
   });
 }
 
