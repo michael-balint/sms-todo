@@ -35,6 +35,9 @@
           },
           "responseTemplates": {
             "application/xml;charset=UTF-8": ""
+          },
+          "responseTemplates": {
+            "application/xml; charset=utf-8": "#set($inputRoot = $input.path('$')) $inputRoot.body"
           }
         }
       }

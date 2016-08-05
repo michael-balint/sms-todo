@@ -64,8 +64,9 @@ function sendMessage(params, callback) {
     }
     var resp = new twilio.TwimlResponse();
     resp.say(params.body);
-    console.log(resp.toString());
-    return callback(null, resp.toString());
+    var xml = resp.toString();
+    console.log(xml)
+    return callback(null, xml);
   });
 }
 
